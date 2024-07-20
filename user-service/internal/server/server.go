@@ -10,9 +10,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/sirupsen/logrus"
 
-	"github.com/sejamuchhal/task-management/users/internal/database"
-	"github.com/sejamuchhal/task-management/users/internal/token"
-	"github.com/sejamuchhal/task-management/users/utils"
+	"github.com/sejamuchhal/task-management/user-service/internal/database"
+	"github.com/sejamuchhal/task-management/user-service/internal/token"
+	"github.com/sejamuchhal/task-management/common/utils"
 )
 
 type Server struct {

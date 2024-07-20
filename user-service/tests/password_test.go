@@ -3,18 +3,18 @@ package tests
 import (
 	"testing"
 
-	"github.com/sejamuchhal/task-management/users/utils"
+	"github.com/sejamuchhal/task-management/user-service/internal/server"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func TestValidPassword(t *testing.T) {
 	password := "test#2dff"
-	hashedPassword, err := utils.HashPassword(password)
+	hashedPassword, err := server.HashPassword(password)
 	if err != nil {
 		t.Fatalf("Error hashing password: %v", err)
 	}
 
-	err = utils.CheckPasswordHash(password, hashedPassword)
+	err = server.CheckPasswordHash(password, hashedPassword)
 	if err != nil {
 		t.Errorf("Password should be valid, but check failed: %v", err)
 	}
@@ -22,13 +22,13 @@ func TestValidPassword(t *testing.T) {
 
 func TestInvalidPassword(t *testing.T) {
 	password := "test#2dff"
-	hashedPassword, err := utils.HashPassword(password)
+	hashedPassword, err := server.HashPassword(password)
 	if err != nil {
 		t.Fatalf("Error hashing password: %v", err)
 	}
 
 	invalidPassword := "wrongPsW"
-	err = utils.CheckPasswordHash(invalidPassword, hashedPassword)
+	err = server.CheckPasswordHash(invalidPassword, hashedPassword)
 	if err == nil {
 		t.Error("Invalid password did not fail")
 	}

@@ -8,7 +8,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/sejamuchhal/task-management/users/utils"
+	"github.com/sejamuchhal/task-management/common/utils"
 
 	_ "github.com/joho/godotenv/autoload"
 )

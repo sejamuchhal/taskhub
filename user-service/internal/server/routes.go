@@ -12,7 +12,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.GET("/health", s.Health)
 	r.POST("/signup", s.SignupUser)
 	r.POST("/login", s.LoginUser)
-	r.POST("/tasks", Authenticate(s), s.Validate)
+	// r.POST("/tasks", Authenticate(s), s.Validate)
 
 	return r
 }

@@ -9,8 +9,7 @@ import (
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 
-	"github.com/sejamuchhal/task-management/users/internal/database"
-	"github.com/sejamuchhal/task-management/users/utils"
+	"github.com/sejamuchhal/task-management/user-service/internal/database"
 )
 
 func (s *Server) Health(c *gin.Context) {
@@ -30,7 +29,7 @@ func (s *Server) SignupUser(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := utils.HashPassword(req.Password)
+	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
 		s.logger.WithError(err).Error("Error hashing password")
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -81,7 +80,7 @@ func (s *Server) LoginUser(c *gin.Context) {
 		return
 	}
 
-	err = utils.CheckPasswordHash(req.Password, user.Password)
+	err = CheckPasswordHash(req.Password, user.Password)
 	if err != nil {
 		s.logger.WithError(err).Warn("Invalid password")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
@@ -115,13 +114,14 @@ func (s *Server) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve email from context"})
 		return
 	}
-	user, err := s.db.GetUserByEmail(email.(string))
+	_, err := s.db.GetUserByEmail(email.(string))
 	if err != nil {
 		s.logger.WithError(err).Error("Error fetching user from the database")
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	
+
+	// TODO : make grpc call to create task
 
 	c.JSON(http.StatusOK, gin.H{
 		"email": email,

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/sejamuchhal/task-management/users/internal/server"
+	"github.com/sejamuchhal/task-management/user-service/internal/server"
 )
 
 func main() {
