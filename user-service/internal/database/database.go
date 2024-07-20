@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/sejamuchhal/task-management/common"
+	"github.com/sejamuchhal/taskhub/user-service/common"
 )
 
 type Storage struct {

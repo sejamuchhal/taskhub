@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sejamuchhal/task-management/user-service/internal/server"
+	"github.com/sejamuchhal/taskhub/user-service/internal/server"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,3 +1,3 @@
-module github.com/sejamuchhal/task-management/notification-service
+module github.com/sejamuchhal/taskhub/notification-service
 
-go 1.22.2
+go 1.22.4

@@ -9,7 +9,7 @@ import (
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 
-	"github.com/sejamuchhal/task-management/user-service/internal/database"
+	"github.com/sejamuchhal/taskhub/user-service/internal/database"
 )
 
 func (s *Server) Health(c *gin.Context) {

@@ -1,10 +1,10 @@
-package database
+package storage
 
 import (
 	"time"
 
 	"github.com/go-gormigrate/gormigrate/v2"
-	"github.com/sejamuchhal/task-management/common"
+	"github.com/sejamuchhal/taskhub/task-service/common"
 	"gorm.io/gorm"
 )
 

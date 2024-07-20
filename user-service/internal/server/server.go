@@ -10,14 +10,15 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/sirupsen/logrus"
 
-	"github.com/sejamuchhal/task-management/user-service/internal/database"
-	"github.com/sejamuchhal/task-management/user-service/internal/token"
+	"github.com/sejamuchhal/taskhub/user-service/common"
+	"github.com/sejamuchhal/taskhub/user-service/internal"
+	"github.com/sejamuchhal/taskhub/user-service/internal/database"
 )
 
 type Server struct {
 	port         int
 	db           *database.Storage
-	tokenHandler token.TokenHandler
+	tokenHandler internal.TokenHandler
 	logger       *logrus.Entry
 }
 
@@ -26,8 +27,8 @@ func NewServer() *http.Server {
 	NewServer := &Server{
 		port:         port,
 		db:           database.New(),
-		tokenHandler: token.NewTokenHandler(os.Getenv("JWT_SECRET")),
-		logger:       utils.Logger,
+		tokenHandler: internal.NewTokenHandler(os.Getenv("JWT_SECRET")),
+		logger:       common.Logger,
 	}
 
 	// Declare Server config

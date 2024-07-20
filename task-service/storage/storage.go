@@ -1,4 +1,4 @@
-package database
+package storage
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/sejamuchhal/task-management/common"
+	"github.com/sejamuchhal/taskhub/task-service/common"
 )
 
 type Storage struct {
@@ -44,4 +44,15 @@ func New() *Storage {
 
 	MigrateDB(db)
 	return storageInstance
+}
+
+func (s *Storage) CreateTask(task *Task) error {
+	err := s.db.Create(task).Error
+	return err
+}
+
+func (s *Storage) GetTaskByEmail(id string) (*Task, error) {
+	var result Task
+	err := s.db.Model(&Task{}).First(&result, "is= ?", id).Error
+	return &result, err
 }

@@ -1,6 +1,6 @@
-module github.com/sejamuchhal/task-management/user-service
+module github.com/sejamuchhal/taskhub/user-service
 
-go 1.22.2
+go 1.22.4
 
 require (
 	github.com/gin-gonic/gin v1.10.0

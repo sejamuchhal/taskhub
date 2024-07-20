@@ -1,2 +1,2 @@
-# task-management
+# taskhub
 Microservices based task management system

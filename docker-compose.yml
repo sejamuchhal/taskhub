@@ -1,10 +1,22 @@
 services:
   user-service:
-    build: ./user-service
+    build:
+      context: ./user-service
     env_file:
-      - ./user-service/.env
+      - .env
     ports:
       - "3000:3000"
+    depends_on:
+      psql:
+        condition: service_healthy
+
+  task-service:
+    build:
+      context: ./task-service
+    env_file:
+      - .env
+    ports:
+      - "8005:8005"
     depends_on:
       psql:
         condition: service_healthy
@@ -24,6 +36,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
 
 volumes:
   psql_volume:
