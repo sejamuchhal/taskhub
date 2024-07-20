@@ -1,8 +1,8 @@
 services:
-  users:
-    build: ./users
+  user-service:
+    build: ./user-service
     env_file:
-      - ./users/.env
+      - ./user-service/.env
     ports:
       - "3000:3000"
     depends_on:
