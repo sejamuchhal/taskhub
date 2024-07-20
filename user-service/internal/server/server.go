@@ -12,7 +12,6 @@ import (
 
 	"github.com/sejamuchhal/task-management/user-service/internal/database"
 	"github.com/sejamuchhal/task-management/user-service/internal/token"
-	"github.com/sejamuchhal/task-management/common/utils"
 )
 
 type Server struct {

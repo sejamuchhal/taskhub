@@ -8,9 +8,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/sejamuchhal/task-management/common/utils"
-
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/sejamuchhal/task-management/common"
 )
 
 type Storage struct {
@@ -28,7 +27,7 @@ func getConnectionString() string {
 }
 
 func New() *Storage {
-	logger := utils.Logger
+	logger := common.Logger
 	logger.Info("Connecting to database")
 
 	dsn := getConnectionString()

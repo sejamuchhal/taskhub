@@ -3,14 +3,13 @@ package database
 import (
 	"time"
 
-	"github.com/sejamuchhal/task-management/common/utils"
-
 	"github.com/go-gormigrate/gormigrate/v2"
+	"github.com/sejamuchhal/task-management/common"
 	"gorm.io/gorm"
 )
 
 func MigrateDB(db *gorm.DB) *gorm.DB {
-	logger := utils.Logger
+	logger := common.Logger
 	logger = logger.WithField("method", "MigrateDB")
 	dbObj, err := db.DB()
 	if err != nil {
