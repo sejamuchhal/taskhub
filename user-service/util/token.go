@@ -1,4 +1,4 @@
-package internal
+package util
 
 import (
 	"time"
@@ -11,7 +11,7 @@ type TokenHandler struct {
 }
 
 type CustomClaims struct {
-	Email string `json:"email"`
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -21,9 +21,9 @@ func NewTokenHandler(secret string) TokenHandler {
 	}
 }
 
-func (handler *TokenHandler) CreateToken(email string, expiry time.Time) (string, error) {
+func (handler *TokenHandler) CreateToken(user_id string, expiry time.Time) (string, error) {
 	claims := CustomClaims{
-		Email: email,
+		UserID: user_id,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiry),
 		},

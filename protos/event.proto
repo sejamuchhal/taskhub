@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package task;
+
+option go_package = "github.com/sejamuchhal/taskhub/protos/event";
+
+message TaskUpdateEvent {
+    string title = 1;
+    string status = 2;
+    string email = 3;
+}

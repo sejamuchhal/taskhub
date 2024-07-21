@@ -30,3 +30,25 @@ type LoginUserResponse struct {
 	AccessTokenExpiresAt time.Time  `json:"access_token_expires_at"`
 	User                 userDetail `json:"user"`
 }
+
+type CreateTaskRequest struct {
+	Title       string `form:"title" json:"title" binding:"required"`
+	Description string `form:"description" json:"description"`
+	DueDateTime string `form:"due_date_time" json:"due_date_time" binding:"required"`
+}
+
+type CreateTaskResponse struct {
+	ID string `json:"id"`
+}
+
+type ListTasksRequest struct {
+	Limit   int  `form:"limit" binding:"required"`
+	Offset  int  `form:"offset" binding:"required"`
+	Pending bool `form:"pending" binding:"required"`
+}
+
+type UpdateTaskRequest struct {
+	Title       string `form:"title" json:"title" binding:"required"`
+	Description string `form:"description" json:"description"`
+	DueDateTime string `form:"due_date_time" json:"due_date_time" binding:"required"`
+}

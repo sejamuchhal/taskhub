@@ -3,6 +3,9 @@ package common
 import (
 	"fmt"
 	"os"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -10,18 +13,25 @@ type Config struct {
 	RMQPassword string
 	RMQQueue    string
 	RMQPort     string
-	RMQUrl      string
+	HTTPPort    int64
 	GRPCAddress string
+	Logger      *logrus.Entry
 }
 
 func LoadConfig() (*Config, error) {
+	httpPort, err := strconv.ParseInt(getEnv("HTTPPort", "3000"), 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("missing required port environment variables")
+	}
+
 	config := &Config{
-		RMQUser:     getEnv("RABBITMQ_USER", ""),
-		RMQPassword: getEnv("RABBITMQ_PASSWORD", ""),
-		RMQQueue:    getEnv("RABBITMQ_QUEUE", ""),
+		RMQUser:     getEnv("RABBITMQ_USER", "rmq"),
+		RMQPassword: getEnv("RABBITMQ_PASSWORD", "rmq"),
+		RMQQueue:    getEnv("RABBITMQ_QUEUE", "task_queue"),
 		RMQPort:     getEnv("RABBITMQ_PORT", "5672"),
-		RMQUrl:      getEnv("RABBITMQ_URL", "amqp://rmq:rmq@rabbit1:5672/"),
 		GRPCAddress: getEnv("GRPC_ADDRESS", "0.0.0.0:8080"),
+		HTTPPort:    httpPort,
+		Logger:      Logger,
 	}
 
 	if config.RMQUser == "" || config.RMQPassword == "" || config.RMQQueue == "" {

@@ -24,7 +24,7 @@ func Authenticate(server *Server) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("email", claims.Email)
+		c.Set("user_id", claims.UserID)
 		c.Next()
 	}
 }

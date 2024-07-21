@@ -7,7 +7,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      psql:
+      db:
         condition: service_healthy
 
   task-service:
@@ -16,13 +16,17 @@ services:
     env_file:
       - .env
     ports:
-      - "8005:8005"
+      - "8080:8080"
     depends_on:
-      psql:
+      db:
+        condition: service_healthy
+      rabbit1:
         condition: service_healthy
 
-  psql:
-    image: postgres:latest
+  db:
+    env_file:
+      - .env
+    image: postgres:alpine
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -30,22 +34,28 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - psql_volume:/var/lib/postgresql/data
+      - db_volume:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #   environment:
-  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+  rabbit1:
+    env_file:
+      - .env
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  psql_volume:
-
+  db_volume:

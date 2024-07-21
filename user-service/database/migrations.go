@@ -35,16 +35,18 @@ func MigrateDB(db *gorm.DB) *gorm.DB {
 
 var migrations = []*gormigrate.Migration{
 	{
-		ID: "202407192100",
+		ID: "202407210730",
 		Migrate: func(tx *gorm.DB) error {
 			type User struct {
-				ID        uint      `json:"id" gorm:"primary_key"`
+				ID        string    `sql:"size:255;not null";gorm:"primary_key"`
 				Name      string    `gorm:"size:255" json:"name"`
 				Email     string    `gorm:"size:100;not null;unique" json:"email"`
 				Password  string    `gorm:"size:100;not null;" json:"password"`
 				CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 				UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+				Posts     []Task    `gorm:"foreignKey:UserID,constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 			}
+
 			if err := tx.Migrator().CreateTable(&User{}); err != nil {
 				tx.Rollback()
 				return err

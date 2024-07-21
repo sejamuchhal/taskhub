@@ -5,22 +5,24 @@ import (
 	"net"
 	"time"
 
-	pb "github.com/sejamuchhal/taskhub/task-service/proto"
-	"github.com/sejamuchhal/taskhub/task-service/server"
 	"github.com/sejamuchhal/taskhub/task-service/common"
+	pb "github.com/sejamuchhal/taskhub/task-service/pb/task"
+	"github.com/sejamuchhal/taskhub/task-service/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
+	log.Print("Starting task server")
 	config, err := common.LoadConfig()
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
 
-	listener, err := net.Listen("tcp", config.GRPCAddress)
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
 	if err != nil {
-		log.Fatalf("Failed to listen on %s: %v", config.GRPCAddress, err)
+		log.Fatalf("Failed to listen on %s: %v", "0.0.0.0:8080", err)
 	}
 	defer listener.Close()
 
@@ -31,6 +33,7 @@ func main() {
 		Time:              10 * time.Minute,
 	}))
 
+	reflection.Register(grpcServer)
 	srv, err := server.NewServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)

@@ -1,9 +1,11 @@
 package server
 
 import (
+
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sejamuchhal/taskhub/task-service/common"
-	"github.com/sejamuchhal/taskhub/task-service/events"
-	pb "github.com/sejamuchhal/taskhub/task-service/proto"
+	rabbitmq "github.com/sejamuchhal/taskhub/task-service/events"
+	pb "github.com/sejamuchhal/taskhub/task-service/pb/task"
 	"github.com/sejamuchhal/taskhub/task-service/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -11,23 +13,30 @@ import (
 // Server implements the TaskServiceServer interface
 type Server struct {
 	pb.UnimplementedTaskServiceServer
-	RMQ     *events.RabbitMQ
-	Storage *storage.Storage
-	Logger  *logrus.Entry
+	Publisher *rabbitmq.RabbitMQBroker
+	Storage   *storage.Storage
+	Logger    *logrus.Entry
 }
 
 func NewServer(cfg *common.Config) (*Server, error) {
 	logger := common.Logger
-	rmq, err := events.NewRabbitMQ(cfg.RMQQueue, cfg.RMQUser, cfg.RMQPassword)
+
+	conn, err := amqp.Dial(cfg.RMQUrl)
 	if err != nil {
-		logger.WithError(err).Error("Failed to connect to RabbitMQ")
+		logger.WithError(err).Error("Failed to connect to rabbitmq")
 		return nil, err
 	}
 
+	rmq := &rabbitmq.RabbitMQBroker{
+		Connection: conn,
+		Logger:     logger,
+		QueueName:  cfg.RMQQueue,
+	}
+
 	server := &Server{
-		RMQ:     rmq,
-		Storage: storage.New(),
-		Logger:  logger,
+		Publisher: rmq,
+		Storage:   storage.New(),
+		Logger:    logger,
 	}
 	return server, nil
 }

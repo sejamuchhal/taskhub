@@ -1,28 +1,25 @@
-package events
+package rabbitmq
 
 import (
-	"fmt"
-
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/sirupsen/logrus"
 )
 
-type RabbitMQ struct {
-	Conn    *amqp.Connection
-	Channel *amqp.Channel
-	Queue   amqp.Queue
+type RabbitMQBroker struct {
+	QueueName  string
+	Connection *amqp.Connection
+	Logger     *logrus.Entry
 }
 
-func NewRabbitMQ(queueName string, user string, password string) (*RabbitMQ, error) {
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@rabbitmq:5672/", user, password))
+func (rmq *RabbitMQBroker) Publish(message []byte) error {
+	channel, err := rmq.Connection.Channel()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	channel, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-	queue, err := channel.QueueDeclare(
-		queueName,
+	defer channel.Close()
+
+	_, err = channel.QueueDeclare(
+		rmq.QueueName,
 		true,
 		false,
 		false,
@@ -30,13 +27,18 @@ func NewRabbitMQ(queueName string, user string, password string) (*RabbitMQ, err
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	rmq := &RabbitMQ{
-		Conn:    conn,
-		Channel: channel,
-		Queue:   queue,
-	}
-	return rmq, nil
-}
 
+	err = channel.Publish(
+		"",
+		rmq.QueueName,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        message,
+		},
+	)
+	return err
+}
