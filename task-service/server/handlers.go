@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/google/uuid"
 	event_pb "github.com/sejamuchhal/taskhub/task-service/pb/event"
 	task_pb "github.com/sejamuchhal/taskhub/task-service/pb/task"
 	"github.com/sejamuchhal/taskhub/task-service/storage"
@@ -27,7 +28,10 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 		return nil, status.Error(codes.InvalidArgument, "Title is required")
 	}
 
+	taskID := uuid.NewString()
+
 	storageTask := &storage.Task{
+		ID:          taskID,
 		Title:       req.GetTask().GetTitle(),
 		Description: req.GetTask().GetDescription(),
 		UserID:      req.GetTask().GetUserId(),
@@ -65,7 +69,7 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 	}
 
 	s.Logger.Info("Task created successfully")
-	return &task_pb.CreateTaskResponse{}, nil
+	return &task_pb.CreateTaskResponse{Id: taskID}, nil
 }
 
 func (s *Server) GetTask(ctx context.Context, req *task_pb.GetTaskRequest) (*task_pb.GetTaskResponse, error) {
@@ -98,24 +102,36 @@ func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (
 	})
 
 	logger.Info("Received ListTasks request")
+
+	// Set default values if not provided
 	if req.Offset == 0 {
 		req.Offset = 0
 	}
 
-	if req.Limit > 20 {
-		req.Limit = 20
+	if req.Limit == 0 {
+		req.Limit = 10
 	}
 
-	tasks, count, err := s.Storage.ListTasksWithCount(req.UserId, int(req.Offset), int(req.Limit))
+	tasks, count, err := s.Storage.ListTasksWithCount(req.UserId, int(req.Limit), int(req.Offset))
 	if err != nil {
-		s.Logger.WithError(err).Error("Could not list tasks from the database")
+		logger.WithError(err).Error("Could not list tasks from the database")
 		return nil, status.Errorf(codes.Internal, "Could not list tasks from the database: %v", err)
 	}
+
 	pbTasks := make([]*task_pb.Task, len(tasks))
 	for i, t := range tasks {
 		pbTasks[i] = TransformTask(t)
 	}
-	return &task_pb.ListTasksResponse{Tasks: pbTasks, TotalCount: count}, nil
+
+	logger.WithFields(logrus.Fields{
+		"task_count":  len(pbTasks),
+		"total_count": count,
+	}).Info("Successfully retrieved tasks")
+
+	return &task_pb.ListTasksResponse{
+		Tasks:      pbTasks,
+		TotalCount: count,
+	}, nil
 }
 
 func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest) (*task_pb.DeleteTaskResponse, error) {
@@ -227,4 +243,3 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 	s.Logger.Info("Task updated successfully")
 	return &task_pb.UpdateTaskResponse{}, nil
 }
-

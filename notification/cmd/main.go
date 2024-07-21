@@ -4,25 +4,32 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	rabbitmq "github.com/sejamuchhal/taskhub/notification-service/events"
+	rabbitmq "github.com/sejamuchhal/taskhub/notification/events"
 
-	"github.com/sejamuchhal/taskhub/notification-service/common"
-	"github.com/sejamuchhal/taskhub/notification-service/worker"
+	"github.com/sejamuchhal/taskhub/notification/common"
+	"github.com/sejamuchhal/taskhub/notification/server"
 )
 
 func main() {
+
 	conf := common.LoadConfig()
-	emailSender := worker.NewEmailSender(conf.MailersendAPIKey)
+	logger := conf.Logger
+	logger.Info("Configuration loaded successfully")
+
+	emailSender := worker.NewEmailSender(conf)
+
 	var conn *amqp.Connection
 	var err error
 
-	logger := conf.Logger
 	backoff := time.Millisecond * 500
 	maxBackoff := time.Second * 60
+
+	logger.Info("Starting RabbitMQ connection attempts")
 
 	for {
 		conn, err = amqp.Dial(conf.RabbitMQURL)
 		if err == nil {
+			logger.Info("Successfully connected to RabbitMQ")
 			break
 		}
 
@@ -40,5 +47,10 @@ func main() {
 		Logger:     logger,
 		QueueName:  conf.TaskQueue,
 	}
-	worker.NewWorker(emailSender, rmq)
+	worker := worker.NewWorker(emailSender, rmq)
+	rmq.MsgHandler = worker.NotificationHandler
+
+	// Start consuming messages
+	logger.Info("Starting message consumption from RabbitMQ")
+	rmq.Consume()
 }

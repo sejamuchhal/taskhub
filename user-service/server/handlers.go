@@ -16,26 +16,23 @@ import (
 )
 
 func (s *Server) Health(c *gin.Context) {
-	resp := map[string]string{
-		"message": "It's healthy",
-	}
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, gin.H{"message": "It's healthy"})
 }
 
 func (s *Server) SignupUser(c *gin.Context) {
 	s.logger.Info("Incoming signup request")
-	var req SignupUserRequest
 
+	var req SignupUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		s.logger.WithError(err).Error("Error parsing signup request payload")
-		c.JSON(http.StatusBadRequest, errorResponse(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
 		s.logger.WithError(err).Error("Error hashing password")
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -45,15 +42,13 @@ func (s *Server) SignupUser(c *gin.Context) {
 		Password: hashedPassword,
 	})
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			if pqErr.Code == "23505" {
-				s.logger.WithError(err).Error("User already exists")
-				c.JSON(http.StatusForbidden, errorResponse(errors.New("user already exists")))
-				return
-			}
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			s.logger.WithError(err).Error("User already exists")
+			c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+			return
 		}
 		s.logger.WithError(err).Error("Error creating user in the database")
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -63,11 +58,11 @@ func (s *Server) SignupUser(c *gin.Context) {
 
 func (s *Server) LoginUser(c *gin.Context) {
 	s.logger.Info("Incoming login request")
-	var req LoginUserRequest
 
+	var req LoginUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		s.logger.WithError(err).Error("Error parsing login request payload")
-		c.JSON(http.StatusBadRequest, errorResponse(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -79,22 +74,21 @@ func (s *Server) LoginUser(c *gin.Context) {
 			return
 		}
 		s.logger.WithError(err).Error("Error fetching user from the database")
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = CheckPasswordHash(req.Password, user.Password)
-	if err != nil {
+	if err := CheckPasswordHash(req.Password, user.Password); err != nil {
 		s.logger.WithError(err).Warn("Invalid password")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
-	expiry := time.Now().Add(time.Hour * 24)
 
+	expiry := time.Now().Add(24 * time.Hour)
 	token, err := s.tokenHandler.CreateToken(user.ID, expiry)
 	if err != nil {
 		s.logger.WithError(err).Error("Error creating access token")
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -107,12 +101,14 @@ func (s *Server) LoginUser(c *gin.Context) {
 			CreatedAt: user.CreatedAt,
 		},
 	}
+
 	s.logger.Info("User login successful")
 	c.JSON(http.StatusOK, res)
 }
 
 func (s *Server) CreateTask(c *gin.Context) {
 	s.logger.Info("Incoming create task request")
+
 	var taskReq CreateTaskRequest
 	if err := c.ShouldBindJSON(&taskReq); err != nil {
 		s.logger.WithError(err).Error("Failed to bind JSON")
@@ -124,30 +120,30 @@ func (s *Server) CreateTask(c *gin.Context) {
 	dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
 	if err != nil {
 		s.logger.WithError(err).Error("Invalid date time format")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please try again with format: January 2, 2006 3:04 PM MST"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
 		return
 	}
 
 	userID, exists := c.Get("user_id")
 	if !exists {
-		s.logger.Error("Could not retrieve user_id from context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve user_id from context"})
+		s.logger.Error("User ID not found in context")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
-	userIDString, ok := userID.(string)
+	userIDStr, ok := userID.(string)
 	if !ok {
-		s.logger.Error("Invalid user ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID"})
+		s.logger.Error("Invalid user ID type")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
 		return
 	}
 
-	s.logger.Debug("Sending CreateTask grpc request")
+	s.logger.Debug("Sending CreateTask gRPC request")
 	resp, err := s.taskClient.CreateTask(context.Background(), &task.CreateTaskRequest{
 		Task: &task.Task{
 			Title:       taskReq.Title,
 			Description: taskReq.Description,
-			UserId:      userIDString,
+			UserId:      userIDStr,
 			DueDate:     timestamppb.New(dueDateTime),
 		},
 	})
@@ -156,15 +152,19 @@ func (s *Server) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	s.logger.WithField("resp", resp).Debug("Got response from grpc")
-	c.JSON(http.StatusOK, gin.H{
-		"task_id": resp.Id,
-	})
+
+	s.logger.WithField("response", resp).Debug("Received response from gRPC")
+	c.JSON(http.StatusOK, gin.H{"task_id": resp.Id})
 }
 
 func (s *Server) GetTask(c *gin.Context) {
 	s.logger.Info("Incoming get task request")
+
 	taskID := c.Param("id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		return
+	}
 
 	resp, err := s.taskClient.GetTask(context.Background(), &task.GetTaskRequest{Id: taskID})
 	if err != nil {
@@ -173,11 +173,13 @@ func (s *Server) GetTask(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.Task)
+	taskDetails := TransformTask(resp.Task)
+	c.JSON(http.StatusOK, taskDetails)
 }
 
 func (s *Server) ListTasks(c *gin.Context) {
 	s.logger.Info("Incoming list tasks request")
+
 	var req ListTasksRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		s.logger.WithError(err).Error("Failed to bind query parameters")
@@ -187,15 +189,15 @@ func (s *Server) ListTasks(c *gin.Context) {
 
 	userID, exists := c.Get("user_id")
 	if !exists {
-		s.logger.Error("Could not retrieve user_id from context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve user_id from context"})
+		s.logger.Error("User ID not found in context")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
 	userIDStr, ok := userID.(string)
 	if !ok {
-		s.logger.Error("Invalid user ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID"})
+		s.logger.Error("Invalid user ID type")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
 		return
 	}
 
@@ -211,12 +213,30 @@ func (s *Server) ListTasks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	if len(resp.GetTasks()) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "No tasks found"})
+		return
+	}
+
+	taskDetails := make([]*TaskDetails, len(resp.GetTasks()))
+	for i, t := range resp.GetTasks() {
+		taskDetails[i] = TransformTask(t)
+	}
+
+	c.JSON(http.StatusOK, ListTasksResponse{
+		Count: int(resp.TotalCount),
+		Tasks: taskDetails,
+	})
 }
 
 func (s *Server) DeleteTask(c *gin.Context) {
 	s.logger.Info("Incoming delete task request")
+
 	taskID := c.Param("id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		return
+	}
 
 	_, err := s.taskClient.DeleteTask(context.Background(), &task.DeleteTaskRequest{Id: taskID})
 	if err != nil {
@@ -230,7 +250,12 @@ func (s *Server) DeleteTask(c *gin.Context) {
 
 func (s *Server) UpdateTask(c *gin.Context) {
 	s.logger.Info("Incoming update task request")
+
 	taskID := c.Param("id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		return
+	}
 
 	var taskReq UpdateTaskRequest
 	if err := c.ShouldBindJSON(&taskReq); err != nil {
@@ -243,7 +268,7 @@ func (s *Server) UpdateTask(c *gin.Context) {
 	dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
 	if err != nil {
 		s.logger.WithError(err).Error("Invalid date time format")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please try again with format: January 2, 2006 3:04 PM MST"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
 		return
 	}
 
@@ -266,7 +291,12 @@ func (s *Server) UpdateTask(c *gin.Context) {
 
 func (s *Server) CompleteTask(c *gin.Context) {
 	s.logger.Info("Incoming complete task request")
+
 	taskID := c.Param("id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		return
+	}
 
 	getTaskResp, err := s.taskClient.GetTask(context.Background(), &task.GetTaskRequest{Id: taskID})
 	if err != nil {

@@ -5,15 +5,20 @@ import (
 	"time"
 
 	"github.com/mailersend/mailersend-go"
+	"github.com/sejamuchhal/taskhub/notification/common"
 )
 
 type EmailSender struct {
 	MailerSendServer *mailersend.Mailersend
+	SenderName       string
+	SenderEmail      string
 }
 
-func NewEmailSender(mailersend_api_key string) *EmailSender {
+func NewEmailSender(conf *common.Config) *EmailSender {
 	return &EmailSender{
-		MailerSendServer: mailersend.NewMailersend(mailersend_api_key),
+		MailerSendServer: mailersend.NewMailersend(conf.MailersendAPIKey),
+		SenderName:       conf.MailersendSenderName,
+		SenderEmail:      conf.MailersendSenderEmail,
 	}
 }
 
@@ -24,8 +29,8 @@ func (e *EmailSender) SendEmail(to, subject, body string) (*mailersend.Response,
 	defer cancel()
 
 	from := mailersend.From{
-		Name:  "Seja Muchhal",
-		Email: "seja@clarifyme.in",
+		Name:  e.SenderName,
+		Email: e.SenderEmail,
 	}
 
 	recipients := []mailersend.Recipient{

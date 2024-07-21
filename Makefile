@@ -28,8 +28,8 @@ gen:
 		--go-grpc_out=task-service/pb/event --go-grpc_opt=paths=source_relative \
 		protos/event.proto
 	protoc -I=protos \
-		--go_out=notification-service/pb --go_opt=paths=source_relative \
-		--go-grpc_out=notification-service/pb --go-grpc_opt=paths=source_relative \
+		--go_out=notification/pb --go_opt=paths=source_relative \
+		--go-grpc_out=notification/pb --go-grpc_opt=paths=source_relative \
 		protos/event.proto
 	protoc -I=protos \
 		--go_out=user-service/client/task --go_opt=paths=source_relative \

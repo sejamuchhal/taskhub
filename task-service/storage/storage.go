@@ -57,19 +57,26 @@ func (s *Storage) GetTaskByID(id string) (*Task, error) {
 	return &result, err
 }
 
-func (s *Storage) ListTasksWithCount(user_id string, limit, offset int) ([]*Task, int64, error) {
+func (s *Storage) ListTasksWithCount(userID string, limit, offset int) ([]*Task, int64, error) {
 	tasks := make([]*Task, 0, limit)
 	var count int64
+
 	db := s.db
-	if user_id != "" {
-		db = db.Where(&Task{UserID: user_id})
+	if userID != "" {
+		db = db.Where(&Task{UserID: userID})
 	}
+
 	err := db.Order("created_at DESC").Limit(limit).Offset(offset).Find(&tasks).Error
 	if err != nil {
 		return tasks, count, err
 	}
-	err = db.Limit(-1).Offset(-1).Count(&count).Error
-	return tasks, count, err
+
+	err = db.Model(&Task{}).Where(&Task{UserID: userID}).Count(&count).Error
+	if err != nil {
+		return tasks, count, err
+	}
+
+	return tasks, count, nil
 }
 
 func (s *Storage) DeleteTask(taskID string) error {
