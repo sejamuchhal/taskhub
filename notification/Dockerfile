@@ -1,3 +1,4 @@
+# Stage 1: Build the Go binary
 FROM golang:alpine AS builder
 
 LABEL stage=gobuilder
@@ -14,13 +15,14 @@ RUN go mod download
 COPY . .
 RUN go build -ldflags="-s -w" -o /app/main cmd/main.go
 
+# Stage 2: Create the final image
+FROM alpine:latest
 
-FROM scratch
-
-COPY --from=builder /usr/share/zoneinfo/Asia/Kolkata /usr/share/zoneinfo/Asia/Kolkata
-ENV TZ Asia/Kolkata
+RUN apk update --no-cache && apk add --no-cache tzdata ca-certificates
 
 WORKDIR /app
+COPY --from=builder /usr/share/zoneinfo/Asia/Kolkata /usr/share/zoneinfo/Asia/Kolkata
+ENV TZ Asia/Kolkata
 COPY --from=builder /app/main /app/main
 
 CMD ["./main"]
