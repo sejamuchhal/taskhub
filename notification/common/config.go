@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 type Config struct {
