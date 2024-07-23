@@ -85,7 +85,7 @@ func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResp
 	}
 
 	expiry := time.Now().Add(24 * time.Hour)
-	token, err := s.TokenHandler.CreateToken(user.ID, user.Email, expiry)
+	token, err := s.TokenHandler.CreateToken(user, expiry)
 	if err != nil {
 		logger.WithError(err).Error("Error creating access token")
 		return nil, status.Errorf(codes.Internal, "Error creating access token: %v", err)
@@ -105,17 +105,18 @@ func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResp
 
 // Validate token and return
 func (s *Server) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb.ValidateResponse, error) {
-    logger := s.Logger.WithField("method", "Validate")
-    logger.Debug("Incoming request")
+	logger := s.Logger.WithField("method", "Validate")
+	logger.Debug("Incoming request")
 
-    claims, err := s.TokenHandler.VerifyToken(req.Token)
-    if err != nil {
-        logger.WithError(err).Error("Invalid token")
-        return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
-    }
+	claims, err := s.TokenHandler.VerifyToken(req.Token)
+	if err != nil {
+		logger.WithError(err).Error("Invalid token")
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
+	}
+	logger.WithField("claims", claims).Debug("Fetched claims")
 
-    return &pb.ValidateResponse{
-        UserId: claims.UserID,
-        Email:  claims.Email,
-    }, nil
+	return &pb.ValidateResponse{
+		UserId: claims.UserID,
+		Email:  claims.Email,
+	}, nil
 }

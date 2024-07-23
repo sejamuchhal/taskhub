@@ -15,6 +15,8 @@ type User struct {
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 	Tasks     []Task    `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"tasks"`
+	Active    bool      `gorm:"default:true"`
+	Role      string    `gorm:"size:100;default:'user'"`
 }
 
 func (user *User) BeforeSave(tx *gorm.DB) (err error) {

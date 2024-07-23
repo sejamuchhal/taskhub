@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log"
 	"time"
 
 	"github.com/go-gormigrate/gormigrate/v2"
@@ -55,6 +56,44 @@ var migrations = []*gormigrate.Migration{
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return tx.Migrator().DropTable("users")
+		},
+	},
+	{
+		ID: "202407231130",
+		Migrate: func(tx *gorm.DB) error {
+			log.Println("add active field to user Model")
+			type User struct {
+				Active bool `gorm:"default:true"`
+			}
+			if err := tx.Migrator().AddColumn(&User{}, "Active"); err != nil {
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			type User struct {
+				Active bool
+			}
+			return tx.Migrator().DropColumn(&User{}, "Active")
+		},
+	},
+	{
+		ID: "202407231200",
+		Migrate: func(tx *gorm.DB) error {
+			log.Println("add role field to user Model")
+			type User struct {
+				Role string `gorm:"size:100;default:'user'"`
+			}
+			if err := tx.Migrator().AddColumn(&User{}, "Role"); err != nil {
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			type User struct {
+				Role string
+			}
+			return tx.Migrator().DropColumn(&User{}, "Role")
 		},
 	},
 }

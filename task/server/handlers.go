@@ -10,6 +10,7 @@ import (
 	"github.com/sejamuchhal/taskhub/task/storage"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
@@ -22,6 +23,17 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 	})
 
 	logger.Info("Received CreateTask request")
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
+	}
+
+	logger.WithField("meta_data", md).Info("Received meta data request")
+	emails, ok := md["email"]
+	if !ok || len(emails) == 0 {
+		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	}
 
 	if req.GetTask().GetTitle() == "" {
 		s.Logger.Error("CreateTask failed: Title is required")
@@ -52,7 +64,7 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "created",
 		Title:  storageTask.Title,
-		Email:  "sejamuchhal@gmail.com",
+		Email:  emails[0],
 	}
 
 	eventJSON, err := json.Marshal(event)
@@ -105,7 +117,6 @@ func (s *Server) GetTask(ctx context.Context, req *task_pb.GetTaskRequest) (*tas
 	return res, nil
 }
 
-
 func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (*task_pb.ListTasksResponse, error) {
 	logger := s.Logger.WithFields(logrus.Fields{
 		"req":    req,
@@ -151,7 +162,6 @@ func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (
 	}, nil
 }
 
-
 func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest) (*task_pb.DeleteTaskResponse, error) {
 	logger := s.Logger.WithFields(logrus.Fields{
 		"req":    req,
@@ -159,6 +169,16 @@ func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest)
 	})
 
 	logger.Info("Received DeleteTask request")
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
+	}
+
+	logger.WithField("meta_data", md).Info("Received meta data request")
+	emails, ok := md["email"]
+	if !ok || len(emails) == 0 {
+		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	}
 
 	task, err := s.Storage.GetTaskByID(req.GetId())
 	if err != nil {
@@ -189,7 +209,7 @@ func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "deleted",
 		Title:  task.Title,
-		Email:  "sejamuchhal@gmail.com",
+		Email:  emails[0],
 	}
 
 	eventJSON, err := json.Marshal(event)
@@ -216,6 +236,17 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 	})
 
 	logger.Info("Received UpdateTask request")
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
+	}
+
+	logger.WithField("meta_data", md).Info("Received meta data request")
+	emails, ok := md["email"]
+	if !ok || len(emails) == 0 {
+		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	}
 
 	if req.GetTask().GetTitle() == "" {
 		s.Logger.Error("UpdateTask failed: Title is required")
@@ -248,7 +279,7 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "updated",
 		Title:  task.Title,
-		Email:  "sejamuchhal@gmail.com",
+		Email:  emails[0],
 	}
 
 	eventJSON, err := json.Marshal(event)

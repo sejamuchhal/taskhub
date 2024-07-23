@@ -18,7 +18,7 @@ func LoadConfig() (*Config, error) {
 	grpcAddress := fmt.Sprintf("0.0.0.0:%v", port)
 	config := &Config{
 		GRPCAddress: grpcAddress,
-		JWTSecret:   getEnv("JWT_SECRET", "test"),
+		JWTSecret:   getEnv("JWT_SECRET", "taskhub"),
 		Logger:      Logger,
 	}
 

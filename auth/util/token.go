@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sejamuchhal/taskhub/auth/storage"
 )
 
 type TokenHandler struct {
@@ -13,6 +14,7 @@ type TokenHandler struct {
 type CustomClaims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -22,10 +24,11 @@ func NewTokenHandler(secret string) TokenHandler {
 	}
 }
 
-func (handler *TokenHandler) CreateToken(user_id string, email string, expiry time.Time) (string, error) {
+func (handler *TokenHandler) CreateToken(user *storage.User, expiry time.Time) (string, error) {
 	claims := CustomClaims{
-		UserID: user_id,
-		Email:  email,
+		UserID: user.ID,
+		Email:  user.Email,
+		Role:   user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiry),
 		},
