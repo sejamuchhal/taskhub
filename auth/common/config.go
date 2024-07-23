@@ -1,29 +1,25 @@
 package common
 
 import (
-	"fmt"
 	"os"
-	"strconv"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
-	HTTPPort  int64
-	JWTSecret string
-	Logger    *logrus.Entry
+	GRPCAddress string
+	JWTSecret   string
+	Logger      *logrus.Entry
 }
 
 func LoadConfig() (*Config, error) {
-	httpPort, err := strconv.ParseInt(getEnv("AUTH_PORT", "3000"), 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("missing required port environment variables")
-	}
-
+	port := getEnv("AUTH_PORT", "4040")
+	grpcAddress := fmt.Sprintf("0.0.0.0:%v", port)
 	config := &Config{
-		JWTSecret: getEnv("JWT_SECRET", "test"),
-		HTTPPort:  httpPort,
-		Logger:    Logger,
+		GRPCAddress: grpcAddress,
+		JWTSecret:   getEnv("JWT_SECRET", "test"),
+		Logger:      Logger,
 	}
 
 	return config, nil

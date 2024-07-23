@@ -22,9 +22,9 @@ func main() {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
 
-	listener, err := net.Listen("tcp", "0.0.0.0:5000")
+	listener, err := net.Listen("tcp", config.GRPCAddress)
 	if err != nil {
-		log.Fatalf("Failed to listen on %s: %v", "0.0.0.0:5000", err)
+		log.Fatalf("Failed to listen on %s: %v", config.GRPCAddress, err)
 	}
 	defer listener.Close()
 
@@ -45,7 +45,7 @@ func main() {
 
 	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 
-	log.Println("Starting gRPC server on port 5000...")
+	log.Println("Starting gRPC server on port 8080...")
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

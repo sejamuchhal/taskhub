@@ -1,5 +1,30 @@
 package server
 
+type UserDetail struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type SignupUserRequest struct {
+	Name     string `form:"name" json:"name" binding:"required,min=3,max=100"`
+	Email    string `form:"email" json:"email" binding:"required,email"`
+	Password string `form:"password" json:"password" binding:"required,min=6,max=100"`
+}
+
+type SignupUserResponse struct {
+	ID string `json:"id"`
+}
+
+type LoginUserRequest struct {
+	Email    string `form:"email" json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type LoginUserResponse struct {
+	AccessToken string     `json:"access_token"`
+	User        UserDetail `json:"user"`
+}
+
 type CreateTaskRequest struct {
 	Title       string `form:"title" json:"title" binding:"required"`
 	Description string `form:"description" json:"description"`
@@ -20,7 +45,6 @@ type TaskDetails struct {
 	Title       string
 	Description string
 	Status      string
-	UserId      string
 	DueDate     string
 	CreatedAt   string
 	UpdatedAt   string
@@ -31,7 +55,7 @@ type GetTaskResponse struct {
 }
 
 type ListTasksResponse struct {
-	Count int           `json:"count"`
+	Count int            `json:"count"`
 	Tasks []*TaskDetails `json:"tasks"`
 }
 

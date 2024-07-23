@@ -6,19 +6,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterRoutes sets up all the required routes
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
-	r.POST("/tasks", Authenticate(s), s.CreateTask)
-	r.GET("/tasks/:id", Authenticate(s), s.GetTask)
-	r.GET("/tasks", Authenticate(s), s.ListTasks)
-	r.DELETE("/tasks/:id", Authenticate(s), s.DeleteTask)
-	r.PUT("/tasks/:id", Authenticate(s), s.UpdateTask)
-	r.PUT("/tasks/:id/complete", Authenticate(s), s.CompleteTask)
+	r.GET("/health", s.Health)
+
+	authRoutes := r.Group("/auth")
+	{
+		authRoutes.POST("/signup", s.SignupUser)
+		authRoutes.POST("/login", s.LoginUser)
+	}
+
+	taskRoutes := r.Group("/tasks")
+	{
+		taskRoutes.Use(Authenticate(s))
+		taskRoutes.POST("", s.CreateTask)
+		taskRoutes.GET("/:id", s.GetTask)
+		taskRoutes.GET("", s.ListTasks)
+		taskRoutes.DELETE("/:id", s.DeleteTask)
+		taskRoutes.PUT("/:id", s.UpdateTask)
+		taskRoutes.PUT("/:id/complete", s.CompleteTask)
+	}
 
 	return r
 }
 
+
+// Return error string in response
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
 }

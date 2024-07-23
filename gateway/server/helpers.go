@@ -3,7 +3,7 @@ package server
 import (
 	"time"
 
-	pb "github.com/sejamuchhal/taskhub/gateway/client/task"
+	pb "github.com/sejamuchhal/taskhub/gateway/pb/task"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

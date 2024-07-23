@@ -1,32 +1,36 @@
 services:
-  task:
-    build:
-      context: ./task
-    env_file:
-      - .env
-    ports:
-      - "5000:5000"
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbit1:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=:5000"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   auth:
     build:
       context: ./auth
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "4040:4040"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=:4040"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  task:
+    build:
+      context: ./task
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbit1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=:8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   gateway:
     build:
@@ -34,8 +38,10 @@ services:
     env_file:
       - .env
     ports:
-      - "4000:4000"
+      - "3000:3000"
     depends_on:
+      auth:
+        condition: service_healthy
       task:
         condition: service_healthy
 

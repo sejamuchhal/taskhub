@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/sejamuchhal/taskhub/gateway/common"
@@ -13,11 +12,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
-	fmt.Print("Starting http server")
-	server := srv.NewServer(config)
 
-	err = server.ListenAndServe()
+	log.Println("Starting HTTP server")
+
+	server, err := srv.NewServer(config)
 	if err != nil {
-		panic(fmt.Sprintf("cannot start server: %s", err))
+		log.Fatalf("Error creating server: %v", err)
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Cannot start server: %v", err)
 	}
 }

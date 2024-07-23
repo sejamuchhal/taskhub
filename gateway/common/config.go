@@ -9,35 +9,31 @@ import (
 )
 
 type Config struct {
-	RMQUser     string
-	RMQPassword string
-	RMQQueue    string
-	RMQPort     string
-	HTTPPort    int64
-	GRPCAddress string
-	Logger      *logrus.Entry
-	JWTSecret   string
+	Logger         *logrus.Entry
+	HTTPPort       int64
+	AuthServiceUrl string
+	TaskServiceUrl string
 }
 
 func LoadConfig() (*Config, error) {
-	httpPort, err := strconv.ParseInt(getEnv("GATEWAY_PORT", "4000"), 10, 32)
+	httpPort, err := strconv.ParseInt(getEnv("GATEWAY_PORT", "3000"), 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("missing required port environment variables")
 	}
 
-	config := &Config{
-		RMQUser:     getEnv("RABBITMQ_USER", "rmq"),
-		RMQPassword: getEnv("RABBITMQ_PASSWORD", "rmq"),
-		RMQQueue:    getEnv("RABBITMQ_QUEUE", "task_queue"),
-		RMQPort:     getEnv("RABBITMQ_PORT", "5672"),
-		GRPCAddress: getEnv("GRPC_ADDRESS", "0.0.0.0:5000"),
-		JWTSecret:   getEnv("JWT_SECRET", "test"),
-		HTTPPort:    httpPort,
-		Logger:      Logger,
-	}
 
-	if config.RMQUser == "" || config.RMQPassword == "" || config.RMQQueue == "" {
-		return nil, fmt.Errorf("missing required environment variables")
+	authPort := getEnv("AUTH_PORT", "4040")
+	authServiceUrl := fmt.Sprintf("auth:%v", authPort)
+
+	taskPort := getEnv("TASK_PORT", "8080")
+	taskServiceUrl := fmt.Sprintf("task:%v", taskPort)
+	
+
+	config := &Config{
+		Logger:         Logger,
+		HTTPPort:       httpPort,
+		AuthServiceUrl: authServiceUrl,
+		TaskServiceUrl: taskServiceUrl,
 	}
 
 	return config, nil

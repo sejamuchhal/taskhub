@@ -1,104 +1,121 @@
 package server
 
 import (
+	"context"
 	"errors"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
+	pb "github.com/sejamuchhal/taskhub/auth/pb"
+	"github.com/sejamuchhal/taskhub/auth/storage"
+	"github.com/sejamuchhal/taskhub/auth/util"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
-
-	"github.com/sejamuchhal/taskhub/auth/database"
 )
 
-func (s *Server) Health(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "It's healthy"})
-}
+// Signup handles user registration
+// Checks if user already exist for email or not if yes, retrun error
+func (s *Server) Signup(ctx context.Context, req *pb.SignupRequest) (*pb.SignupResponse, error) {
+	logger := s.Logger.WithFields(logrus.Fields{
+		"method": "Signup",
+		"req":    req,
+	})
+	logger.Debug("Incoming signup request")
 
-func (s *Server) SignupUser(c *gin.Context) {
-	s.logger.Info("Incoming signup request")
-
-	var req SignupUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		s.logger.WithError(err).Error("Error parsing signup request payload")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	hashedPassword, err := HashPassword(req.Password)
+	user, err := s.Storage.GetUserByEmail(req.Email)
 	if err != nil {
-		s.logger.WithError(err).Error("Error hashing password")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		if err == gorm.ErrRecordNotFound {
+			logger.WithError(err).Error("Error fetching user from the database")
+			return nil, status.Errorf(codes.Internal, "Error fetching user from the database: %v", err)
+		}
+	} else if user != nil {
+		logger.WithError(err).Error("User already exists")
+		return nil, status.Errorf(codes.AlreadyExists, "User already exists")
 	}
 
-	err = s.db.CreateUser(&database.User{
+	hashedPassword, err := util.HashPassword(req.Password)
+	if err != nil {
+		logger.WithError(err).Error("Error hashing password")
+		return nil, status.Errorf(codes.Internal, "Error hashing password: %v", err)
+	}
+
+	err = s.Storage.CreateUser(&storage.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
 	})
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			s.logger.WithError(err).Error("User already exists")
-			c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
-			return
+			logger.WithError(err).Error("User already exists")
+			return nil, status.Errorf(codes.AlreadyExists, "User already exists")
 		}
-		s.logger.WithError(err).Error("Error creating user in the database")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		logger.WithError(err).Error("Error creating user in the database")
+		return nil, status.Errorf(codes.Internal, "Error creating user in the database: %v", err)
 	}
 
-	s.logger.Info("User signup successful")
-	c.JSON(http.StatusOK, gin.H{"message": "User signup successful"})
+	logger.Debug("User signup successful")
+	return &pb.SignupResponse{Message: "User signup successful"}, nil
 }
 
-func (s *Server) LoginUser(c *gin.Context) {
-	s.logger.Info("Incoming login request")
+// Login handles user login
+// Check if user exist or not for email
+// if yes, compare password hash
+func (s *Server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	logger := s.Logger.WithFields(logrus.Fields{
+		"method": "Login",
+		"req":    req,
+	})
+	logger.Debug("Incoming login request")
 
-	var req LoginUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		s.logger.WithError(err).Error("Error parsing login request payload")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	user, err := s.db.GetUserByEmail(req.Email)
+	user, err := s.Storage.GetUserByEmail(req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.WithError(err).Warn("User not found")
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid email or password"})
-			return
+			logger.WithError(err).Warn("User not found")
+			return nil, status.Errorf(codes.NotFound, "Invalid email or password")
 		}
-		s.logger.WithError(err).Error("Error fetching user from the database")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		logger.WithError(err).Error("Error fetching user from the database")
+		return nil, status.Errorf(codes.Internal, "Error fetching user from the database: %v", err)
 	}
 
-	if err := CheckPasswordHash(req.Password, user.Password); err != nil {
-		s.logger.WithError(err).Warn("Invalid password")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-		return
+	if err := util.CheckPasswordHash(req.Password, user.Password); err != nil {
+		logger.WithError(err).Warn("Invalid password")
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid email or password")
 	}
 
 	expiry := time.Now().Add(24 * time.Hour)
-	token, err := s.tokenHandler.CreateToken(user.ID, expiry)
+	token, err := s.TokenHandler.CreateToken(user.ID, user.Email, expiry)
 	if err != nil {
-		s.logger.WithError(err).Error("Error creating access token")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		logger.WithError(err).Error("Error creating access token")
+		return nil, status.Errorf(codes.Internal, "Error creating access token: %v", err)
 	}
 
-	res := LoginUserResponse{
-		AccessToken:          token,
-		AccessTokenExpiresAt: expiry,
-		User: userDetail{
-			Name:      user.Name,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt,
+	res := &pb.LoginResponse{
+		Token: token,
+		User: &pb.UserDetail{
+			Name:  user.Name,
+			Email: user.Email,
 		},
 	}
 
-	s.logger.Info("User login successful")
-	c.JSON(http.StatusOK, res)
+	logger.Debug("User login successful")
+	return res, nil
+}
+
+// Validate token and return
+func (s *Server) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb.ValidateResponse, error) {
+    logger := s.Logger.WithField("method", "Validate")
+    logger.Debug("Incoming request")
+
+    claims, err := s.TokenHandler.VerifyToken(req.Token)
+    if err != nil {
+        logger.WithError(err).Error("Invalid token")
+        return nil, status.Errorf(codes.Unauthenticated, "Invalid token: %v", err)
+    }
+
+    return &pb.ValidateResponse{
+        UserId: claims.UserID,
+        Email:  claims.Email,
+    }, nil
 }

@@ -12,6 +12,7 @@ type TokenHandler struct {
 
 type CustomClaims struct {
 	UserID string `json:"user_id"`
+	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
@@ -21,9 +22,10 @@ func NewTokenHandler(secret string) TokenHandler {
 	}
 }
 
-func (handler *TokenHandler) CreateToken(user_id string, expiry time.Time) (string, error) {
+func (handler *TokenHandler) CreateToken(user_id string, email string, expiry time.Time) (string, error) {
 	claims := CustomClaims{
 		UserID: user_id,
+		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiry),
 		},
@@ -37,4 +39,20 @@ func (handler *TokenHandler) CreateToken(user_id string, expiry time.Time) (stri
 	}
 
 	return tokenString, nil
+}
+
+func (handler *TokenHandler) VerifyToken(tokenString string) (*CustomClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(handler.secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, err
 }
