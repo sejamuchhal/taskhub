@@ -9,13 +9,15 @@ import (
 // RegisterRoutes sets up all the required routes
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
-
+	r.Use(RecordRequestLatency)
 	r.GET("/health", s.Health)
+	r.GET("/metrics", prometheusHandler())
 
 	authRoutes := r.Group("/auth")
 	{
 		authRoutes.POST("/signup", s.SignupUser)
 		authRoutes.POST("/login", s.LoginUser)
+
 	}
 
 	taskRoutes := r.Group("/tasks")
@@ -30,10 +32,4 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}
 
 	return r
-}
-
-
-// Return error string in response
-func errorResponse(err error) gin.H {
-	return gin.H{"error": err.Error()}
 }

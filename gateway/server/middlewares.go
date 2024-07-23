@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	pb "github.com/sejamuchhal/taskhub/gateway/pb/auth"
 )
 
@@ -47,3 +49,26 @@ func Authenticate(server *Server) gin.HandlerFunc {
 	}
 }
 
+func RegisterPrometheusMatrics() {
+	prometheus.MustRegister(latency)
+}
+
+func RecordRequestLatency(ctx *gin.Context) {
+	start := time.Now()
+	ctx.Next()
+	elapased := time.Since(start).Seconds()
+	latency.WithLabelValues(
+		ctx.Request.Method,
+		ctx.Request.URL.Path,
+	).Observe(elapased)
+}
+
+var latency = prometheus.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Namespace:  "api",
+		Name:       "latency_seconds",
+		Help:       "Request latency distributions.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	},
+	[]string{"method", "path"},
+)

@@ -12,10 +12,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sejamuchhal/taskhub/gateway/pb/auth"
 	"github.com/sejamuchhal/taskhub/gateway/pb/task"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func (s *Server) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "It's healthy"})
+}
+
+func prometheusHandler() gin.HandlerFunc {
+    h := promhttp.Handler()
+
+    return func(c *gin.Context) {
+        h.ServeHTTP(c.Writer, c.Request)
+    }
 }
 
 func (s *Server) SignupUser(c *gin.Context) {

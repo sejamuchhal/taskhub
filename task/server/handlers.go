@@ -79,21 +79,32 @@ func (s *Server) GetTask(ctx context.Context, req *task_pb.GetTaskRequest) (*tas
 	})
 
 	logger.Info("Received GetTask request")
-	task_id := req.GetId()
-	if task_id == "" {
-		s.Logger.Error("GetTask failed: ID is required")
-		return nil, status.Error(codes.InvalidArgument, "ID is required")
+	taskID := req.GetId()
+	if taskID == "" {
+		errMsg := "GetTask failed: Task ID is required"
+		logger.Error(errMsg)
+		return nil, status.Error(codes.InvalidArgument, errMsg)
 	}
-	task, err := s.Storage.GetTaskByID(task_id)
+
+	task, err := s.Storage.GetTaskByID(taskID)
 	if err != nil {
-		s.Logger.WithError(err).Error("Could not insert Task into the database")
-		return nil, status.Errorf(codes.Internal, "Could not insert Task into the database: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			errMsg := "Task not found"
+			logger.WithError(err).Error(errMsg)
+			return nil, status.Errorf(codes.NotFound, "%s: %v", errMsg, err)
+		}
+		errMsg := "Failed to retrieve Task from the database"
+		logger.WithError(err).Error(errMsg)
+		return nil, status.Errorf(codes.Internal, "%s: %v", errMsg, err)
 	}
+
 	res := &task_pb.GetTaskResponse{
 		Task: TransformTask(task),
 	}
+	logger.Info("GetTask request processed successfully")
 	return res, nil
 }
+
 
 func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (*task_pb.ListTasksResponse, error) {
 	logger := s.Logger.WithFields(logrus.Fields{
@@ -114,8 +125,14 @@ func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (
 
 	tasks, count, err := s.Storage.ListTasksWithCount(req.UserId, int(req.Limit), int(req.Offset))
 	if err != nil {
-		logger.WithError(err).Error("Could not list tasks from the database")
-		return nil, status.Errorf(codes.Internal, "Could not list tasks from the database: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			errMsg := "No tasks found for the given user ID"
+			logger.WithError(err).Error(errMsg)
+			return nil, status.Errorf(codes.NotFound, "%s: %v", errMsg, err)
+		}
+		errMsg := "Failed to list tasks from the database"
+		logger.WithError(err).Error(errMsg)
+		return nil, status.Errorf(codes.Internal, "%s: %v", errMsg, err)
 	}
 
 	pbTasks := make([]*task_pb.Task, len(tasks))
@@ -134,6 +151,7 @@ func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (
 	}, nil
 }
 
+
 func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest) (*task_pb.DeleteTaskResponse, error) {
 	logger := s.Logger.WithFields(logrus.Fields{
 		"req":    req,
@@ -144,8 +162,14 @@ func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest)
 
 	task, err := s.Storage.GetTaskByID(req.GetId())
 	if err != nil {
-		s.Logger.WithError(err).Error("Could not insert Task into the database")
-		return nil, status.Errorf(codes.Internal, "Could not insert Task into the database: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			errMsg := "Task not found"
+			logger.WithError(err).Error(errMsg)
+			return nil, status.Errorf(codes.NotFound, "%s: %v", errMsg, err)
+		}
+		errMsg := "Failed to retrieve Task from the database"
+		logger.WithError(err).Error(errMsg)
+		return nil, status.Errorf(codes.Internal, "%s: %v", errMsg, err)
 	}
 
 	err = s.Storage.DeleteTask(req.GetId())

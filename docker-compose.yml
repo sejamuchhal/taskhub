@@ -87,6 +87,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  
+  prometheus:
+    image: prom/prometheus:v2.45.2
+    user: root
+    volumes:
+      - "./monitoring/prometheus:/monitoring/prometheus"
+      - "./var/prometheus/prometheus_data:/prometheus"
+    command:
+      - "--config.file=/monitoring/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9000:9090"
 
 volumes:
   db_volume:
+  prometheus_volume:

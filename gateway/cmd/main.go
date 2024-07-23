@@ -20,6 +20,8 @@ func main() {
 		log.Fatalf("Error creating server: %v", err)
 	}
 
+	srv.RegisterPrometheusMatrics()
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Cannot start server: %v", err)
 	}

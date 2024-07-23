@@ -26,7 +26,7 @@ func (s *Server) Signup(ctx context.Context, req *pb.SignupRequest) (*pb.SignupR
 
 	user, err := s.Storage.GetUserByEmail(req.Email)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if err != gorm.ErrRecordNotFound {
 			logger.WithError(err).Error("Error fetching user from the database")
 			return nil, status.Errorf(codes.Internal, "Error fetching user from the database: %v", err)
 		}
