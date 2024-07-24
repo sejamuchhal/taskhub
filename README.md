@@ -33,12 +33,15 @@ To try this project:
    This will start the following services:
 
    - Gateway REST API service at port 3000
+      [http://localhost:3000/health](http://localhost:3000/health)
    - Auth gRPC service at port 4040
    - Task gRPC service at port 8080
    - Notification background worker
    - PostgreSQL database server on port 5432
    - RabbitMQ message broker on ports 5672 (with UI exposed at 15672)
-   - Prometheus basic monitoring server on port 9090, with metrics exposed via the gateway endpoint [matrics](http://localhost:3000/matrics)
+      [http://localhost:15672](http://localhost:15672)
+   - Prometheus basic monitoring server on port 9090, with metrics exposed via the gateway endpoint 
+      [http://localhost:3000/matrics](http://localhost:3000/matrics)
 
 ## TODO
 
