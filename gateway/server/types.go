@@ -1,5 +1,9 @@
 package server
 
+import (
+	"time"
+)
+
 type UserDetail struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
@@ -21,8 +25,12 @@ type LoginUserRequest struct {
 }
 
 type LoginUserResponse struct {
-	AccessToken string     `json:"access_token"`
-	User        UserDetail `json:"user"`
+	SessionID             string     `json:"session_id"`
+	AccessToken           string     `json:"access_token"`
+	AccessTokenExpiresAt  time.Time  `json:"access_token_expires_at"`
+	RefreshToken          string     `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time  `json:"refresh_token_expires_at"`
+	User                  UserDetail `json:"user"`
 }
 
 type CreateTaskRequest struct {
@@ -63,4 +71,9 @@ type UpdateTaskRequest struct {
 	Title       string `form:"title" json:"title"`
 	Description string `form:"description" json:"description"`
 	DueDateTime string `form:"due_date_time" json:"due_date_time"`
+}
+
+type RenewAccessTokenResponse struct {
+	AccessToken          string    `json:"access_token"`
+	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 }

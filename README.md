@@ -42,10 +42,3 @@ To try this project:
       [http://localhost:15672](http://localhost:15672)
    - Prometheus basic monitoring server on port 9090, with metrics exposed via the gateway endpoint 
       [http://localhost:3000/matrics](http://localhost:3000/matrics)
-
-## TODO
-
-- [ ] **Authentication**: Implement refresh tokens and session functionality to manage access tokens securely.
-- [ ] **Authorization**: Utilize user roles stored in user records for JWT token claims.
-- [ ] **Testing**: Implement unit tests to ensure code reliability.
-- [ ] **Documenation**: Provide proper documentation for the codebase.
