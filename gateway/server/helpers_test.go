@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	pb "github.com/sejamuchhal/taskhub/gateway/pb/task"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -72,3 +73,44 @@ func TestTransformTask(t *testing.T) {
 	}
 }
 
+func Test_hasPermission(t *testing.T) {
+	type args struct {
+		c               *gin.Context
+		accessibleRoles []string
+	}
+
+	validCtx := &gin.Context{}
+	validCtx.Set("role", "user")
+
+	invalidCtx := &gin.Context{}
+	invalidCtx.Set("role", "user")
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Valid role",
+			args: args{
+				c:               validCtx,
+				accessibleRoles: []string{"user", "admin"},
+			},
+			want: true,
+		},
+		{
+			name: "Invalid role",
+			args: args{
+				c:               invalidCtx,
+				accessibleRoles: []string{"admin"},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasPermission(tt.args.c, tt.args.accessibleRoles); got != tt.want {
+				t.Errorf("hasPermission() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

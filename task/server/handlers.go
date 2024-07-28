@@ -259,6 +259,9 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 	task.Title = req.Task.Title
 	task.Description = req.Task.Description
 	task.DueDate = req.Task.DueDate.AsTime()
+	if req.Task.Status == "completed" {
+		task.Title = req.Task.Status
+	}
 
 	err = s.Storage.UpdateTask(task)
 	if err != nil {
