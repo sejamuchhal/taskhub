@@ -11,10 +11,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golodash/galidator"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sejamuchhal/taskhub/gateway/pb/auth"
 	"github.com/sejamuchhal/taskhub/gateway/pb/task"
 )
+
+var g = galidator.New()
 
 func (s *Server) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "It's healthy"})
@@ -31,11 +34,11 @@ func prometheusHandler() gin.HandlerFunc {
 func (s *Server) SignupUser(c *gin.Context) {
 	logger := s.Logger.WithField("method", "SignupUser")
 	logger.Debug("Incoming request")
-
+	customizer := g.Validator(SignupUserRequest{})
 	var req SignupUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.WithError(err).Error("Error parsing signup request payload")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": customizer.DecryptErrors(err)})
 		return
 	}
 
@@ -50,20 +53,16 @@ func (s *Server) SignupUser(c *gin.Context) {
 			switch st.Code() {
 			case codes.AlreadyExists:
 				logger.WithError(err).Error("User already exists")
-				c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
-				return
-			case codes.InvalidArgument:
-				logger.WithError(err).Error("Invalid request")
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+				c.JSON(http.StatusConflict, gin.H{"message": "User already exists"})
 				return
 			default:
 				logger.WithError(err).Error("Internal server error")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
 				return
 			}
 		}
 		logger.WithError(err).Error("Unknown error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
 		return
 	}
 
@@ -78,7 +77,7 @@ func (s *Server) LoginUser(c *gin.Context) {
 	var req LoginUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.WithError(err).Error("Error parsing login request payload")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -92,20 +91,16 @@ func (s *Server) LoginUser(c *gin.Context) {
 			switch st.Code() {
 			case codes.NotFound, codes.Unauthenticated:
 				logger.WithError(err).Error("Invalid email or password")
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-				return
-			case codes.InvalidArgument:
-				logger.WithError(err).Error("Invalid request")
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid email or password"})
 				return
 			default:
 				logger.WithError(err).Error("Internal server error")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
 				return
 			}
 		}
 		logger.WithError(err).Error("Unknown error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
 		return
 	}
 
@@ -131,7 +126,7 @@ func (s *Server) RenewAccessToken(c *gin.Context) {
 	refresh := c.GetHeader("Refresh")
 
 	if refresh == "" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "refresh token header is missing"})
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "refresh token header is missing"})
 		c.Abort()
 		return
 	}
@@ -144,21 +139,21 @@ func (s *Server) RenewAccessToken(c *gin.Context) {
 		if ok {
 			switch st.Code() {
 			case codes.NotFound, codes.Unauthenticated:
-				logger.WithError(err).Error("Invalid email or password")
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+				logger.WithError(err).Error("Invalid refresh token")
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid refresh token"})
 				return
 			case codes.InvalidArgument:
 				logger.WithError(err).Error("Invalid request")
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
 				return
 			default:
 				logger.WithError(err).Error("Internal server error")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
 				return
 			}
 		}
 		logger.WithError(err).Error("Unknown error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
 		return
 	}
 
@@ -176,7 +171,7 @@ func (s *Server) Logout(c *gin.Context) {
 	refresh := c.GetHeader("Refresh")
 
 	if refresh == "" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "refresh token header is missing"})
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "refresh token header is missing"})
 		c.Abort()
 		return
 	}
@@ -184,7 +179,7 @@ func (s *Server) Logout(c *gin.Context) {
 	access := c.GetHeader("Access")
 
 	if access == "" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "access token header is missing"})
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "access token header is missing"})
 		c.Abort()
 		return
 	}
@@ -199,44 +194,48 @@ func (s *Server) Logout(c *gin.Context) {
 			switch st.Code() {
 			case codes.InvalidArgument:
 				logger.WithError(err).Error("Invalid access or refresh token")
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid access or refresh token"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid access or refresh token"})
 				return
 			default:
 				logger.WithError(err).Error("Internal server error")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
 				return
 			}
 		}
 		logger.WithError(err).Error("Unknown error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
 		return
 	}
 
-	logger.Info("User lgout successful")
-	c.JSON(http.StatusOK,  gin.H{"message": "User logged out"})
+	logger.Debug("User logout successful")
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }
 
 func (s *Server) CreateTask(c *gin.Context) {
 	logger := s.Logger.WithField("method", "CreateTask")
 	logger.Debug("Incoming request")
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	var taskReq CreateTaskRequest
 	if err := c.ShouldBindJSON(&taskReq); err != nil {
 		logger.WithError(err).Error("Failed to bind JSON")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	layout := "January 2, 2006 3:04 PM MST"
-	dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
-	if err != nil {
-		logger.WithError(err).Error("Invalid date time format")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
-		return
+	var dueDate *timestamppb.Timestamp
+	if taskReq.DueDateTime != "" {
+		const layout = "January 2, 2006 3:04 PM MST"
+		dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
+		if err != nil {
+			logger.WithError(err).Error("Invalid date time format")
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
+			return
+		}
+		dueDate = timestamppb.New(dueDateTime)
 	}
 
 	md, ok := getGRPCMetadataFromGin(c, logger)
@@ -250,12 +249,12 @@ func (s *Server) CreateTask(c *gin.Context) {
 		Task: &task.Task{
 			Title:       taskReq.Title,
 			Description: taskReq.Description,
-			DueDate:     timestamppb.New(dueDateTime),
+			DueDate:     dueDate,
 		},
 	})
 	if err != nil {
 		logger.WithError(err).Error("Failed to create task via gRPC")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -267,20 +266,20 @@ func (s *Server) GetTask(c *gin.Context) {
 	logger := s.Logger.WithField("method", "GetTask")
 	logger.Debug("Incoming request")
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	taskID := c.Param("id")
 	if taskID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task ID is required"})
 		return
 	}
 
 	// Permission check
 	if !hasPermission(c, []string{"user", "admin"}) {
 		logger.Warn("Permission denied")
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Permission denied"})
 		return
 	}
 
@@ -297,11 +296,11 @@ func (s *Server) GetTask(c *gin.Context) {
 			switch st.Code() {
 			case codes.NotFound:
 				logger.WithError(err).Error("Task not found")
-				c.JSON(http.StatusNotFound, gin.H{"message": "Tasks Not Found"})
+				c.JSON(http.StatusNotFound, gin.H{"message": "Task not found"})
 				return
 			default:
 				logger.WithError(err).Error("Failed to get task via gRPC")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return
 			}
 
@@ -316,14 +315,14 @@ func (s *Server) ListTasks(c *gin.Context) {
 	logger := s.Logger.WithField("method", "ListTasks")
 	logger.Debug("Incoming request")
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	var req ListTasksRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		logger.WithError(err).Error("Failed to bind query parameters")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	md, ok := getGRPCMetadataFromGin(c, logger)
@@ -343,11 +342,11 @@ func (s *Server) ListTasks(c *gin.Context) {
 			switch st.Code() {
 			case codes.NotFound:
 				logger.WithError(err).Error("No tasks found")
-				c.JSON(http.StatusNoContent, gin.H{"message": "Tasks Not Found"})
+				c.JSON(http.StatusNoContent, gin.H{"message": "No tasks found"})
 				return
 			default:
 				logger.WithError(err).Error("Failed to list task.")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list tasks. Please try again"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to list tasks. Please try again"})
 				return
 			}
 		}
@@ -372,13 +371,13 @@ func (s *Server) DeleteTask(c *gin.Context) {
 	logger := s.Logger.WithField("method", "DeleteTask")
 	logger.Debug("Incoming request")
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	taskID := c.Param("id")
 	if taskID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task ID is required"})
 		return
 	}
 	md, ok := getGRPCMetadataFromGin(c, logger)
@@ -398,7 +397,7 @@ func (s *Server) DeleteTask(c *gin.Context) {
 				return
 			default:
 				logger.WithError(err).Error("Failed to delete task.")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task. Please try again"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete task. Please try again"})
 				return
 			}
 		}
@@ -411,43 +410,46 @@ func (s *Server) UpdateTask(c *gin.Context) {
 	logger := s.Logger.WithField("method", "UpdateTask")
 	logger.Debug("Incoming request")
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	taskID := c.Param("id")
 	if taskID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task ID is required"})
 		return
 	}
 
 	var taskReq UpdateTaskRequest
 	if err := c.ShouldBindJSON(&taskReq); err != nil {
 		logger.WithError(err).Error("Failed to bind JSON")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	layout := "January 2, 2006 3:04 PM MST"
-	dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
-	if err != nil {
-		logger.WithError(err).Error("Invalid date time format")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
-		return
+	var dueDate *timestamppb.Timestamp
+	if taskReq.DueDateTime != "" {
+		const layout = "January 2, 2006 3:04 PM MST"
+		dueDateTime, err := time.Parse(layout, taskReq.DueDateTime)
+		if err != nil {
+			logger.WithError(err).Error("Invalid date time format")
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date time format, please use: January 2, 2006 3:04 PM MST"})
+			return
+		}
+		dueDate = timestamppb.New(dueDateTime)
 	}
-
 	md, ok := getGRPCMetadataFromGin(c, logger)
 	if !ok {
 		return
 	}
 	ctxWithMetadata := metadata.NewOutgoingContext(context.Background(), md)
 
-	_, err = s.TaskClient.UpdateTask(ctxWithMetadata, &task.UpdateTaskRequest{
+	_, err := s.TaskClient.UpdateTask(ctxWithMetadata, &task.UpdateTaskRequest{
 		Task: &task.Task{
 			Id:          taskID,
 			Title:       taskReq.Title,
 			Description: taskReq.Description,
-			DueDate:     timestamppb.New(dueDateTime),
+			DueDate:     dueDate,
 		},
 	})
 	if err != nil {
@@ -455,12 +457,12 @@ func (s *Server) UpdateTask(c *gin.Context) {
 		if ok {
 			switch st.Code() {
 			case codes.NotFound:
-				logger.WithError(err).Error("Task Not Found")
-				c.JSON(http.StatusNotFound, gin.H{"error": "Task Not Found"})
+				logger.WithError(err).Error("Task not found")
+				c.JSON(http.StatusNotFound, gin.H{"message": "Task not found"})
 				return
 			default:
 				logger.WithError(err).Error("Failed to update task.")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update task. Please try again"})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update task. Please try again"})
 				return
 			}
 		}
@@ -474,24 +476,15 @@ func (s *Server) CompleteTask(c *gin.Context) {
 	logger.Debug("Incoming request")
 
 	if !hasPermission(c, []string{"user", "admin"}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Insufficient permissions"})
 		return
 	}
 
 	taskID := c.Param("id")
 	if taskID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task ID is required"})
 		return
 	}
-
-	getTaskResp, err := s.TaskClient.GetTask(context.Background(), &task.GetTaskRequest{Id: taskID})
-	if err != nil {
-		logger.WithError(err).Error("Failed to get task via gRPC")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	getTaskResp.Task.Status = "completed"
 
 	md, ok := getGRPCMetadataFromGin(c, logger)
 	if !ok {
@@ -499,23 +492,32 @@ func (s *Server) CompleteTask(c *gin.Context) {
 	}
 	ctxWithMetadata := metadata.NewOutgoingContext(context.Background(), md)
 
-	_, err = s.TaskClient.UpdateTask(ctxWithMetadata, &task.UpdateTaskRequest{
-		Task: getTaskResp.Task,
-	})
+	getTaskResp, err := s.TaskClient.GetTask(ctxWithMetadata, &task.GetTaskRequest{Id: taskID})
 	if err != nil {
 		st, ok := status.FromError(err)
 		if ok {
 			switch st.Code() {
 			case codes.NotFound:
-				logger.WithError(err).Error("Task Not Found")
-				c.JSON(http.StatusNotFound, gin.H{"error": "Task Not Found"})
+				logger.WithError(err).Error("Task not found")
+				c.JSON(http.StatusNotFound, gin.H{"message": "Task not found"})
 				return
 			default:
 				logger.WithError(err).Error("Failed to mark task as complete. Please try again")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return
 			}
 		}
+	}
+
+	getTaskResp.Task.Status = "completed"
+
+	_, err = s.TaskClient.UpdateTask(ctxWithMetadata, &task.UpdateTaskRequest{
+		Task: getTaskResp.Task,
+	})
+	if err != nil {
+		logger.WithError(err).Error("Failed to mark task as complete. Please try again")
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task marked as completed", "task_id": getTaskResp.Task.Id})

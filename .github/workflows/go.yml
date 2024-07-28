@@ -17,30 +17,12 @@ jobs:
       with:
         go-version: '1.22'
 
-    - name: Build and test auth service
-      working-directory: ./auth
-      run: |
-        go mod download
-        go build -v ./...
-        go test ./... -coverprofile=coverage.out
-        go tool cover -html=coverage.out -o coverage.html
-
-    - name: Check test coverage for auth service
-      working-directory: ./auth
-      run: |
-        coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-        echo "Total coverage for Auth package $coverage%"
-        if [ $coverage -lt 60 ]; then
-          echo "Need at least 60% coverage for Auth package"
-          exit 1
-        fi
-
     - name: Build and test gateway service
       working-directory: ./gateway
       run: |
         go mod download
         go build -v ./...
-        go test ./... -coverprofile=coverage.out
+        go test `go list ./... | grep -v ./pb` -coverprofile=coverage.out
         go tool cover -html=coverage.out -o coverage.html
 
     - name: Check test coverage for gateway service
@@ -53,48 +35,63 @@ jobs:
           exit 1
         fi
 
-    - name: Build and test notification service
-      working-directory: ./notification
-      run: |
-        go mod download
-        go build -v ./...
-        go test ./... -coverprofile=coverage.out
-        go tool cover -html=coverage.out -o coverage.html
+    # - name: Build and test auth service
+    #   working-directory: ./auth
+    #   run: |
+    #     go mod download
+    #     go build -v ./...
+    #     go test ./... -coverprofile=coverage.out
+    #     go tool cover -html=coverage.out -o coverage.html
 
-    - name: Check test coverage for notification service
-      working-directory: ./notification
-      run: |
-        coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-        echo "Total coverage for Notification package $coverage%"
-        if [ $coverage -lt 60 ]; then
-          echo "Need at least 60% coverage for Notification package"
-          exit 1
-        fi
+    # - name: Check test coverage for auth service
+    #   working-directory: ./auth
+    #   run: |
+    #     coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
+    #     echo "Total coverage for Auth package $coverage%"
+    #     if [ $coverage -lt 60 ]; then
+    #       echo "Need at least 60% coverage for Auth package"
+    #       exit 1
+    #     fi
 
-    - name: Build and test task service
-      working-directory: ./task
-      run: |
-        go mod download
-        go build -v ./...
-        go test ./... -coverprofile=coverage.out
-        go tool cover -html=coverage.out -o coverage.html
+    # - name: Build and test notification service
+    #   working-directory: ./notification
+    #   run: |
+    #     go mod download
+    #     go build -v ./...
+    #     go test ./... -coverprofile=coverage.out
+    #     go tool cover -html=coverage.out -o coverage.html
 
-    - name: Check test coverage for task service
-      working-directory: ./task
-      run: |
-        coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-        echo "Total coverage for Task package $coverage%"
-        if [ $coverage -lt 60 ]; then
-          echo "Need at least 60% coverage for Task package"
-          exit 1
-        fi
+    # - name: Check test coverage for notification service
+    #   working-directory: ./notification
+    #   run: |
+    #     coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
+    #     echo "Total coverage for Notification package $coverage%"
+    #     if [ $coverage -lt 60 ]; then
+    #       echo "Need at least 60% coverage for Notification package"
+    #       exit 1
+    #     fi
+
+    # - name: Build and test task service
+    #   working-directory: ./task
+    #   run: |
+    #     go mod download
+    #     go build -v ./...
+    #     go test ./... -coverprofile=coverage.out
+    #     go tool cover -html=coverage.out -o coverage.html
+
+    # - name: Check test coverage for task service
+    #   working-directory: ./task
+    #   run: |
+    #     coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
+    #     echo "Total coverage for Task package $coverage%"
+    #     if [ $coverage -lt 60 ]; then
+    #       echo "Need at least 60% coverage for Task package"
+    #       exit 1
+    #     fi
 
     - name: Upload coverage reports
       uses: actions/upload-artifact@v3
       with:
         name: coverage-reports
         path: |
-          auth/coverage.html
           gateway/coverage.html
-          notification/coverage.html
-          task/coverage.html

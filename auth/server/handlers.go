@@ -223,8 +223,14 @@ func (s *Server) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutR
 	}
 
 	if session.IsBlocked {
-		logger.Info("Session already revoked")
+		logger.Warning("Session already revoked")
 		return &pb.LogoutResponse{}, nil
+	}
+
+	err = s.Storage.BlockSessionByID(session.ID)
+	if err != nil {
+		logger.WithError(err).Error("Error blocking session")
+		return nil, status.Errorf(codes.Internal, "Error blocking session: %v", err)
 	}
 
 	logger.Debug("User logout successful")
