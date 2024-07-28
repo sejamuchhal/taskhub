@@ -89,12 +89,9 @@ jobs:
     #       exit 1
     #     fi
 
-    # - name: Upload coverage reports
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: coverage-reports
-    #     path: |
-    #       auth/coverage.html
-    #       gateway/coverage.html
-    #       notification/coverage.html
-    #       task/coverage.html
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: |
+          gateway/coverage.html
