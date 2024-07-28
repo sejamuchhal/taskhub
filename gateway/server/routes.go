@@ -17,6 +17,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	{
 		authRoutes.POST("/signup", s.SignupUser)
 		authRoutes.POST("/login", s.LoginUser)
+		authRoutes.POST("/renew", s.RenewAccessToken)
+		authRoutes.POST("/logout", s.Logout)
 
 	}
 

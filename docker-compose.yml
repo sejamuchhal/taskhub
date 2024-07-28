@@ -102,7 +102,15 @@ services:
       - "--web.enable-lifecycle"
     ports:
       - "9000:9090"
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisDB:/data
 
 volumes:
+  redisDB:
   db_volume:
   prometheus_volume:

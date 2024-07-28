@@ -10,7 +10,6 @@ import (
 	"github.com/sejamuchhal/taskhub/task/storage"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
@@ -24,15 +23,14 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 
 	logger.Info("Received CreateTask request")
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
+	email, err := ExtractUserEmail(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	logger.WithField("meta_data", md).Info("Received meta data request")
-	emails, ok := md["email"]
-	if !ok || len(emails) == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	userID, err := ExtractUserID(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	if req.GetTask().GetTitle() == "" {
@@ -44,13 +42,13 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 
 	storageTask := &storage.Task{
 		ID:          taskID,
+		UserID:      userID,
 		Title:       req.GetTask().GetTitle(),
 		Description: req.GetTask().GetDescription(),
-		UserID:      req.GetTask().GetUserId(),
 		DueDate:     req.GetTask().GetDueDate().AsTime(),
 	}
 
-	err := s.Storage.CreateTask(storageTask)
+	err = s.Storage.CreateTask(storageTask)
 	if err != nil {
 		s.Logger.WithError(err).Error("Could not insert Task into the database")
 		return nil, status.Errorf(codes.Internal, "Could not insert Task into the database: %v", err)
@@ -64,7 +62,7 @@ func (s *Server) CreateTask(ctx context.Context, req *task_pb.CreateTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "created",
 		Title:  storageTask.Title,
-		Email:  emails[0],
+		Email:  email,
 	}
 
 	eventJSON, err := json.Marshal(event)
@@ -134,7 +132,12 @@ func (s *Server) ListTasks(ctx context.Context, req *task_pb.ListTasksRequest) (
 		req.Limit = 10
 	}
 
-	tasks, count, err := s.Storage.ListTasksWithCount(req.UserId, int(req.Limit), int(req.Offset))
+	userID, err := ExtractUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tasks, count, err := s.Storage.ListTasksWithCount(userID, int(req.Limit), int(req.Offset))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errMsg := "No tasks found for the given user ID"
@@ -169,15 +172,9 @@ func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest)
 	})
 
 	logger.Info("Received DeleteTask request")
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
-	}
-
-	logger.WithField("meta_data", md).Info("Received meta data request")
-	emails, ok := md["email"]
-	if !ok || len(emails) == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	email, err := ExtractUserEmail(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	task, err := s.Storage.GetTaskByID(req.GetId())
@@ -209,7 +206,7 @@ func (s *Server) DeleteTask(ctx context.Context, req *task_pb.DeleteTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "deleted",
 		Title:  task.Title,
-		Email:  emails[0],
+		Email:  email,
 	}
 
 	eventJSON, err := json.Marshal(event)
@@ -237,15 +234,9 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 
 	logger.Info("Received UpdateTask request")
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "No metadata present")
-	}
-
-	logger.WithField("meta_data", md).Info("Received meta data request")
-	emails, ok := md["email"]
-	if !ok || len(emails) == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "Authentication token is missing")
+	email, err := ExtractUserEmail(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	if req.GetTask().GetTitle() == "" {
@@ -253,15 +244,23 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 		return nil, status.Error(codes.InvalidArgument, "Title is required")
 	}
 
-	task := &storage.Task{
-		ID:          req.GetTask().GetId(),
-		Title:       req.GetTask().GetTitle(),
-		Description: req.GetTask().GetDescription(),
-		UserID:      req.GetTask().GetUserId(),
-		DueDate:     req.GetTask().GetDueDate().AsTime(),
+	task, err := s.Storage.GetTaskByID(req.GetTask().GetId())
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			errMsg := "Task not found"
+			logger.WithError(err).Error(errMsg)
+			return nil, status.Errorf(codes.NotFound, "%s: %v", errMsg, err)
+		}
+		errMsg := "Failed to retrieve Task from the database"
+		logger.WithError(err).Error(errMsg)
+		return nil, status.Errorf(codes.Internal, "%s: %v", errMsg, err)
 	}
 
-	err := s.Storage.UpdateTask(task)
+	task.Title = req.Task.Title
+	task.Description = req.Task.Description
+	task.DueDate = req.Task.DueDate.AsTime()
+
+	err = s.Storage.UpdateTask(task)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			s.Logger.WithError(err).Error("Task not found")
@@ -279,7 +278,7 @@ func (s *Server) UpdateTask(ctx context.Context, req *task_pb.UpdateTaskRequest)
 	event := event_pb.TaskUpdateEvent{
 		Status: "updated",
 		Title:  task.Title,
-		Email:  emails[0],
+		Email:  email,
 	}
 
 	eventJSON, err := json.Marshal(event)

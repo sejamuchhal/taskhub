@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,23 +12,13 @@ import (
 
 func Authenticate(server *Server) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authorization := ctx.GetHeader("Authorization")
+		token := ctx.GetHeader("Access")
 
-		if authorization == "" {
+		if token == "" {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
 			ctx.Abort()
 			return
 		}
-
-		tokenParts := strings.SplitN(authorization, "Bearer ", 2)
-
-		if len(tokenParts) != 2 {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
-			ctx.Abort()
-			return
-		}
-
-		token := tokenParts[1]
 
 		res, err := server.AuthClient.Validate(context.Background(), &pb.ValidateRequest{
 			Token: token,
@@ -43,6 +32,7 @@ func Authenticate(server *Server) gin.HandlerFunc {
 
 		ctx.Set("user_id", res.UserId)
 		ctx.Set("email", res.Email)
+		ctx.Set("role", res.Role)
 
 		// Continue to the next middleware (main handler)
 		ctx.Next()

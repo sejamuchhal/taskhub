@@ -4,10 +4,14 @@ package auth;
 
 option go_package = "github.com/sejamuchhal/taskhub/protos/auth";
 
+import "google/protobuf/timestamp.proto";
+
 service AuthService {
     rpc Signup (SignupRequest) returns (SignupResponse) {}
     rpc Login (LoginRequest) returns (LoginResponse) {}
     rpc Validate (ValidateRequest) returns (ValidateResponse) {}
+    rpc RenewAccessToken (RenewAccessTokenRequest) returns (RenewAccessTokenResponse) {}
+    rpc Logout (LogoutRequest) returns (LogoutResponse) {}
 }
 
 message SignupRequest {
@@ -26,8 +30,12 @@ message LoginRequest {
 }
 
 message LoginResponse {
-    string token = 1;
-    UserDetail user = 2;
+    string access_token = 1;
+    string refresh_token = 2;
+    string session_id = 3;
+    UserDetail user = 4;
+    google.protobuf.Timestamp access_token_expires_at = 5;
+    google.protobuf.Timestamp refresh_token_expires_at = 6; 
 }
 
 message UserDetail {
@@ -42,5 +50,21 @@ message ValidateRequest {
 message ValidateResponse {
     string user_id = 1;
     string email = 2;
+    string role = 3;
 }
 
+message RenewAccessTokenRequest {
+    string refresh_token = 1;
+}
+
+message RenewAccessTokenResponse {
+    string access_token = 1;
+    google.protobuf.Timestamp access_token_expires_at = 2;
+}
+
+message LogoutRequest {
+    string access_token = 1;
+    string refresh_token = 2;
+}
+
+message LogoutResponse {}

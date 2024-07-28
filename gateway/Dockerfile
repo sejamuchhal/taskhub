@@ -17,9 +17,6 @@ RUN go build -ldflags="-s -w" -o /app/main cmd/main.go
 
 FROM scratch
 
-COPY --from=builder /usr/share/zoneinfo/Asia/Kolkata /usr/share/zoneinfo/Asia/Kolkata
-ENV TZ Asia/Kolkata
-
 WORKDIR /app
 COPY --from=builder /app/main /app/main
 

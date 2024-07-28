@@ -21,8 +21,6 @@ FROM alpine:latest
 RUN apk update --no-cache && apk add --no-cache tzdata ca-certificates
 
 WORKDIR /app
-COPY --from=builder /usr/share/zoneinfo/Asia/Kolkata /usr/share/zoneinfo/Asia/Kolkata
-ENV TZ Asia/Kolkata
 COPY --from=builder /app/main /app/main
 
 CMD ["./main"]

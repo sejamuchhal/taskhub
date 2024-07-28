@@ -96,4 +96,27 @@ var migrations = []*gormigrate.Migration{
 			return tx.Migrator().DropColumn(&User{}, "Role")
 		},
 	},
+	{
+		ID: "202407271230",
+		Migrate: func(tx *gorm.DB) error {
+			type Session struct {
+				ID           string    `gorm:"type:uuid;primary_key;"`
+				Email        string    `gorm:"size:100;" json:"email"`
+				RefreshToken string    `gorm:"not null;" json:"refresh_token"`
+				ExpiresAt    time.Time `gorm:"not null" json:"expires_at"`
+				IsBlocked    bool      `gorm:"default:false" json:"is_blocked"`
+				BlockedAt    time.Time `json:"blocked_at"`
+				CreatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+				UpdatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+			}
+			if err := tx.Migrator().CreateTable(&Session{}); err != nil {
+				tx.Rollback()
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Migrator().DropTable("sessions")
+		},
+	},
 }
