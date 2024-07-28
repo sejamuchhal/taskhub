@@ -46,7 +46,7 @@ test: test-gateway test-auth test-notification test-task
 
 # Run tests for the gateway service
 test-gateway:
-	go test `go list ./gateway/... | grep -v ./gateway/pb | grep -v ./gateway/common | grep -v ./gateway/cmd` -coverprofile=gateway/coverage.out
+	go test `go list ./gateway/... | grep -v ./gateway/pb` -coverprofile=gateway/coverage.out
 	@go tool cover -func=gateway/coverage.out | grep total | awk '{print $$3}' | sed 's/%//' | { read -r coverage; \
 	  echo "Total coverage for Gateway package $${coverage}%"; \
 	  if [ $${coverage%.*} -lt 60 ]; then \
