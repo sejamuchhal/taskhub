@@ -1,6 +1,6 @@
 module github.com/sejamuchhal/taskhub/auth
 
-go 1.22.4
+go 1.22
 
 require (
 	github.com/go-gormigrate/gormigrate/v2 v2.1.2
