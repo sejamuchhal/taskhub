@@ -29,6 +29,10 @@ To try this project:
    ```bash
    docker-compose up --build
    ```
+   OR
+   ```bash
+   make build
+   ```
 
    This will start the following services:
 
