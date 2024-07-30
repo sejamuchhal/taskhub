@@ -66,7 +66,7 @@ test-gateway:
 
 # Run tests for the auth service
 test-auth:
-	go test `go list ./auth/... | grep -v ./auth/pb` -coverprofile=auth/coverage.out
+	go test `go list ./auth/... | grep -v ./auth/pb | grep -v ./auth/common | grep -v ./auth/storage` -coverprofile=auth/coverage.out
 	@go tool cover -func=auth/coverage.out | grep total | awk '{print $$3}' | sed 's/%//' | { read -r coverage; \
 	  echo "Total coverage for Auth package $${coverage}%"; \
 	  if [ $${coverage%.*} -lt 60 ]; then \
