@@ -12,6 +12,15 @@ import (
 	"github.com/sejamuchhal/taskhub/task/common"
 )
 
+//go:generate mockgen --build_flags=--mod=mod --destination=./mock_storage/storage.go github.com/sejamuchhal/taskhub/task/storage StorageInterface
+type StorageInterface interface {
+	CreateTask(task *Task) error
+	GetTaskByID(id string) (*Task, error)
+	ListTasksWithCount(userID string, limit, offset int) ([]*Task, int64, error)
+	DeleteTask(taskID string) error
+	UpdateTask(task *Task) error
+}
+
 type Storage struct {
 	db *gorm.DB
 }

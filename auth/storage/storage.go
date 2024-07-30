@@ -16,8 +16,10 @@ import (
 type StorageInterface interface {
 	GetUserByEmail(email string) (*User, error)
 	CreateUser(user *User) error
+	CreateSession(session *Session) error
 	GetSessionByID(sessionID string) (*Session, error)
-	UpdateSession(session *Session) error
+	BlockSessionByID(id string) error
+	DeleteSessionByID(id string) error
 }
 
 type Storage struct {

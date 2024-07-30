@@ -160,10 +160,10 @@ func (s *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessTokenR
 	}
 
 	if session.IsBlocked {
-		logger.WithError(err).Error("Session revoked")
-		return nil, status.Error(codes.Unauthenticated, "Session revoked")
+		logger.WithError(err).Error("Session blocked")
+		return nil, status.Error(codes.Unauthenticated, "Session blocked")
 	}
-	if session.Email != refreshClaims.Email || session.RefreshToken != session.RefreshToken {
+	if session.Email != refreshClaims.Email || session.RefreshToken != req.RefreshToken {
 		logger.WithError(err).Error("Invalid session")
 		return nil, status.Error(codes.Unauthenticated, "Invalid session")
 	}

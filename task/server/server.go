@@ -13,7 +13,7 @@ import (
 type Server struct {
 	pb.UnimplementedTaskServiceServer
 	Publisher *rabbitmq.RabbitMQBroker
-	Storage   *storage.Storage
+	Storage   storage.StorageInterface
 	Logger    *logrus.Entry
 }
 

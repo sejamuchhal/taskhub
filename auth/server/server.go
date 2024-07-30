@@ -15,7 +15,7 @@ import (
 type Server struct {
 	auth.UnsafeAuthServiceServer
 	TokenHandler util.TokenHandler
-	Storage      *storage.Storage
+	Storage      storage.StorageInterface
 	Logger       *logrus.Entry
 	Config       *common.Config
 }
