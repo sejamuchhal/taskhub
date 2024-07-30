@@ -4,10 +4,10 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	rabbitmq "github.com/sejamuchhal/taskhub/notification/events"
+	rabbitmq "github.com/sejamuchhal/taskhub/notification/rabbitmq"
+	"github.com/sejamuchhal/taskhub/notification/worker"
 
 	"github.com/sejamuchhal/taskhub/notification/common"
-	"github.com/sejamuchhal/taskhub/notification/server"
 )
 
 func main() {

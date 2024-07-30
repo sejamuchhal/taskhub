@@ -1,11 +1,11 @@
 package worker
 
 import (
-	rabbitmq "github.com/sejamuchhal/taskhub/notification/events"
+	"github.com/sejamuchhal/taskhub/notification/rabbitmq"
 )
 
 type Worker struct {
-	EmailSender    *EmailSender
+	EmailSender    EmailSenderInterface
 	RabbitMQBroker *rabbitmq.RabbitMQBroker
 }
 
