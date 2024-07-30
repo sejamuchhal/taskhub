@@ -26,7 +26,7 @@ func TestTransformTask(t *testing.T) {
 					Id:          "123",
 					Title:       "Test Task",
 					Description: "This is a test task",
-					Status:      "Open",
+					Status:      "created",
 					DueDate:     timestamppb.New(time.Date(2024, 7, 28, 0, 0, 0, 0, time.UTC)),
 					CreatedAt:   timestamppb.New(time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)),
 					UpdatedAt:   timestamppb.New(time.Date(2024, 7, 15, 0, 0, 0, 0, time.UTC)),
@@ -35,7 +35,7 @@ func TestTransformTask(t *testing.T) {
 			want: &TaskDetails{
 				Title:       "Test Task",
 				Description: "This is a test task",
-				Status:      "Open",
+				Status:      "created",
 				DueDate:     "2024-07-28T00:00:00Z",
 				CreatedAt:   "2024-07-01T00:00:00Z",
 				UpdatedAt:   "2024-07-15T00:00:00Z",

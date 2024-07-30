@@ -3,7 +3,7 @@ package server
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sejamuchhal/taskhub/task/common"
-	rabbitmq "github.com/sejamuchhal/taskhub/task/events"
+	"github.com/sejamuchhal/taskhub/task/events"
 	pb "github.com/sejamuchhal/taskhub/task/pb/task"
 	"github.com/sejamuchhal/taskhub/task/storage"
 	"github.com/sirupsen/logrus"
@@ -12,7 +12,7 @@ import (
 // Server implements the TaskServiceServer interface
 type Server struct {
 	pb.UnimplementedTaskServiceServer
-	Publisher *rabbitmq.RabbitMQBroker
+	Publisher events.RabbitMQBrokerInterface
 	Storage   storage.StorageInterface
 	Logger    *logrus.Entry
 }
@@ -26,7 +26,7 @@ func NewServer(cfg *common.Config) (*Server, error) {
 		return nil, err
 	}
 
-	rmq := &rabbitmq.RabbitMQBroker{
+	rmq := &events.RabbitMQBroker{
 		Connection: conn,
 		Logger:     logger,
 		QueueName:  cfg.RMQQueue,

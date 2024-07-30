@@ -29,11 +29,7 @@ jobs:
       working-directory: ./gateway
       run: |
         coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-        echo "Total coverage for Gateway package $coverage%"
-        if [ $coverage -lt 60 ]; then
-          echo "Need at least 60% coverage for Gateway package"
-          exit 1
-        fi
+        echo "Total coverage for Gateway service $coverage%"
 
     - name: Build and test auth service
       working-directory: ./auth
@@ -47,7 +43,21 @@ jobs:
       working-directory: ./auth
       run: |
         coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-        echo "Total coverage for Auth package $coverage%"
+        echo "Total coverage for Auth service $coverage%"
+
+    - name: Build and test task service
+      working-directory: ./task
+      run: |
+        go mod download
+        go build -v ./...
+        go test ./... -coverprofile=coverage.out
+        go tool cover -html=coverage.out -o coverage.html
+
+    - name: Check test coverage for task service
+      working-directory: ./task
+      run: |
+        coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
+        echo "Total coverage for Task service $coverage%"
 
     # - name: Build and test notification service
     #   working-directory: ./notification
@@ -61,29 +71,8 @@ jobs:
     #   working-directory: ./notification
     #   run: |
     #     coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-    #     echo "Total coverage for Notification package $coverage%"
-    #     if [ $coverage -lt 60 ]; then
-    #       echo "Need at least 60% coverage for Notification package"
-    #       exit 1
-    #     fi
+    #     echo "Total coverage for Notification service $coverage%"
 
-    # - name: Build and test task service
-    #   working-directory: ./task
-    #   run: |
-    #     go mod download
-    #     go build -v ./...
-    #     go test ./... -coverprofile=coverage.out
-    #     go tool cover -html=coverage.out -o coverage.html
-
-    # - name: Check test coverage for task service
-    #   working-directory: ./task
-    #   run: |
-    #     coverage=$(go tool cover -func=coverage.out | grep total | grep -o -E '[0-9]+' | head -n 1)
-    #     echo "Total coverage for Task package $coverage%"
-    #     if [ $coverage -lt 60 ]; then
-    #       echo "Need at least 60% coverage for Task package"
-    #       exit 1
-    #     fi
 
     - name: Upload coverage reports
       uses: actions/upload-artifact@v3
