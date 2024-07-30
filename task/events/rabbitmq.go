@@ -1,9 +1,13 @@
-package rabbitmq
+package events
 
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 )
+
+type RabbitMQBrokerInterface interface {
+	Publish(message []byte) error
+}
 
 type RabbitMQBroker struct {
 	QueueName  string
