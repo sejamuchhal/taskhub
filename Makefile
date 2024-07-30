@@ -112,3 +112,7 @@ cover-notification:
 # Run coverage for the task service
 cover-task:
 	go tool cover -func=task/coverage.out > task/coverage.txt
+
+mockgen:
+	mockgen --build_flags=--mod=mod --destination=./auth/storage/mock_storage/storage.go github.com/sejamuchhal/taskhub/auth/storage StorageInterface
+	mockgen --build_flags=--mod=mod --destination=./task/storage/mock_storage/storage.go github.com/sejamuchhal/taskhub/task/storage StorageInterface

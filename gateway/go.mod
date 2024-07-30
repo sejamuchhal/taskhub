@@ -20,6 +20,7 @@ require (
 	github.com/jinzhu/copier v0.3.5 // indirect
 	github.com/nyaruka/phonenumbers v1.1.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 )
 
 require (
