@@ -1,6 +1,7 @@
 # TaskHub
 
-TaskHub is a microservices-based task management system.
+![image](https://github.com/user-attachments/assets/3321f286-70f8-48e6-9c92-68a56ff916e3)
+
 
 ## Prerequisites
 
