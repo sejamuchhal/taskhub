@@ -47,3 +47,6 @@ To try this project:
       [http://localhost:15672](http://localhost:15672)
    - Prometheus basic monitoring server on port 9090, with metrics exposed via the gateway endpoint 
       [http://localhost:3000/matrics](http://localhost:3000/matrics)
+
+# Database schemas:
+![drawSQL-image-export-2024-08-01-2](https://github.com/user-attachments/assets/db0f06d4-97ed-4b19-92ac-e898f7a257b2)
