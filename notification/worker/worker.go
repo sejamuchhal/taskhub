@@ -1,12 +1,12 @@
 package worker
 
 import (
-	rabbitmq "github.com/sejamuchhal/taskhub/notification/events"
+	"github.com/sejamuchhal/taskhub/notification/rabbitmq"
 )
 
 type Worker struct {
-	EmailSender    *EmailSender
-	RabbitMQBroker *rabbitmq.RabbitMQBroker
+	EmailSender    EmailSenderInterface
+	RabbitMQBroker rabbitmq.RabbitMQBrokerInterface
 }
 
 func NewWorker(emailSender *EmailSender, rmq *rabbitmq.RabbitMQBroker) *Worker {

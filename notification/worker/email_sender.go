@@ -8,6 +8,11 @@ import (
 	"github.com/sejamuchhal/taskhub/notification/common"
 )
 
+//go:generate mockgen -destination=mocks/mock_email_sender.go -package=mocks . EmailSenderInterface
+type EmailSenderInterface interface {
+	SendEmail(to, subject, body string) (*mailersend.Response, error)
+}
+
 type EmailSender struct {
 	MailerSendServer *mailersend.Mailersend
 	SenderName       string

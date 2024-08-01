@@ -2,12 +2,12 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	event "github.com/sejamuchhal/taskhub/notification/pb"
 	log "github.com/sirupsen/logrus"
 )
+
 
 func (w *Worker) NotificationHandler(queue string, msg amqp.Delivery, err error) {
 	logger := log.WithFields(log.Fields{"method": "NotificationHandler"})
@@ -24,7 +24,7 @@ func (w *Worker) NotificationHandler(queue string, msg amqp.Delivery, err error)
 		return
 	}
 
-	mailSubject, mailBody := w.prepareEmailContent(message)
+	mailSubject, mailBody := prepareEmailContent(message)
 
 	_, err = w.EmailSender.SendEmail(message.Email, mailSubject, mailBody)
 	if err != nil {
@@ -35,11 +35,4 @@ func (w *Worker) NotificationHandler(queue string, msg amqp.Delivery, err error)
 	}
 
 	logger.WithFields(log.Fields{"reminder_id": message.Title, "email": message.Email}).Info("Email sent successfully")
-
-}
-
-func (w *Worker) prepareEmailContent(message event.TaskUpdateEvent) (string, string) {
-	mailSubject := fmt.Sprintf("%s: %s", message.Title, message.Status)
-	mailBody := fmt.Sprintf("Task Title: %s\nStatus: %s", message.Title, message.Status)
-	return mailSubject, mailBody
 }

@@ -5,6 +5,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen --build_flags=--mod=mod --destination=../mocks/mock_rabbitmq/rabbitmq.go github.com/sejamuchhal/taskhub/notification/events RabbitMQBrokerInterface
+type RabbitMQBrokerInterface interface {
+	OnError(err error, msg string)
+	Consume()
+}
+
 type RabbitMQBroker struct {
 	QueueName  string
 	Connection *amqp.Connection
