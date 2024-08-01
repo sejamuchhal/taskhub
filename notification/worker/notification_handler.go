@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+
 func (w *Worker) NotificationHandler(queue string, msg amqp.Delivery, err error) {
 	logger := log.WithFields(log.Fields{"method": "NotificationHandler"})
 

@@ -6,7 +6,7 @@ import (
 
 type Worker struct {
 	EmailSender    EmailSenderInterface
-	RabbitMQBroker *rabbitmq.RabbitMQBroker
+	RabbitMQBroker rabbitmq.RabbitMQBrokerInterface
 }
 
 func NewWorker(emailSender *EmailSender, rmq *rabbitmq.RabbitMQBroker) *Worker {

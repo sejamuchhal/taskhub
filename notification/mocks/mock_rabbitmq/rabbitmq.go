@@ -7,7 +7,7 @@ package mock_rabbitmq
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockRabbitMQBrokerInterface is a mock of RabbitMQBrokerInterface interface.
